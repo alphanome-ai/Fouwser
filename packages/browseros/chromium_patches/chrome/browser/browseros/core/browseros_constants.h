@@ -1,9 +1,9 @@
 diff --git a/chrome/browser/browseros/core/browseros_constants.h b/chrome/browser/browseros/core/browseros_constants.h
 new file mode 100644
-index 0000000000000..adc52f61b9771
+index 0000000000000..a9fe1bf4d7d1f
 --- /dev/null
 +++ b/chrome/browser/browseros/core/browseros_constants.h
-@@ -0,0 +1,223 @@
+@@ -0,0 +1,229 @@
 +// Copyright 2024 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -223,6 +223,12 @@ index 0000000000000..adc52f61b9771
 +    ids.push_back(info.id);
 +  return ids;
 +}
++
++// Sentry crash reporting
++// https://9a76046fcfbcfe69a3580f4d204579f1@o4510545525932032.ingest.us.sentry.io/4510938172620800
++inline constexpr char kSentryMinidumpUrl[] =
++    "https://o4510545525932032.ingest.us.sentry.io/api/4510938172620800/"
++    "minidump/?sentry_key=9a76046fcfbcfe69a3580f4d204579f1";
 +
 +}  // namespace browseros
 +
