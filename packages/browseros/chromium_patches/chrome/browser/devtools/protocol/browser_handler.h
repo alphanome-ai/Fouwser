@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/devtools/protocol/browser_handler.h b/chrome/browser/devtools/protocol/browser_handler.h
-index e1424aa52cbf6..947af3378ab68 100644
+index e1424aa52cbf6..2b8da4a31db41 100644
 --- a/chrome/browser/devtools/protocol/browser_handler.h
 +++ b/chrome/browser/devtools/protocol/browser_handler.h
 @@ -5,9 +5,13 @@
@@ -31,7 +31,7 @@ index e1424aa52cbf6..947af3378ab68 100644
    protocol::Response GetWindowBounds(
        int window_id,
        std::unique_ptr<protocol::Browser::Bounds>* out_bounds) override;
-@@ -41,9 +53,112 @@ class BrowserHandler : public protocol::Browser::Backend {
+@@ -41,9 +53,115 @@ class BrowserHandler : public protocol::Browser::Backend {
    protocol::Response AddPrivacySandboxEnrollmentOverride(
        const std::string& in_url) override;
  
@@ -141,6 +141,9 @@ index e1424aa52cbf6..947af3378ab68 100644
    base::flat_set<std::string> contexts_with_overridden_permissions_;
    std::string target_id_;
 +  std::unique_ptr<HiddenTabManager> hidden_tab_manager_;
++  // Window IDs that are positioned off-screen to appear "hidden" while
++  // keeping their compositors active for CDP operations.
++  base::flat_set<int> hidden_window_ids_;
  };
  
  #endif  // CHROME_BROWSER_DEVTOOLS_PROTOCOL_BROWSER_HANDLER_H_

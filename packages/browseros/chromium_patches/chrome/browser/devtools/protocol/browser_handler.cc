@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/devtools/protocol/browser_handler.cc b/chrome/browser/devtools/protocol/browser_handler.cc
-index 30bd52d09c3fc..053af0b50b3d7 100644
+index 30bd52d09c3fc..2b0bba666f4ae 100644
 --- a/chrome/browser/devtools/protocol/browser_handler.cc
 +++ b/chrome/browser/devtools/protocol/browser_handler.cc
 @@ -8,19 +8,32 @@
@@ -35,7 +35,19 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
  #include "content/public/browser/devtools_agent_host.h"
-@@ -72,11 +85,403 @@ std::unique_ptr<protocol::Browser::Bounds> GetBrowserWindowBounds(
+@@ -34,6 +47,11 @@ using protocol::Response;
+ 
+ namespace {
+ 
++// Off-screen position used to hide windows while keeping their compositors
++// active. This enables CDP operations like Page.captureScreenshot on hidden
++// windows. Uses cross-platform ui::BaseWindow::SetBounds/ShowInactive APIs.
++constexpr int kOffScreenPosition = -32000;
++
+ BrowserWindow* GetBrowserWindow(int window_id) {
+   BrowserWindow* result = nullptr;
+   ForEachCurrentBrowserWindowInterfaceOrderedByActivation(
+@@ -72,11 +90,405 @@ std::unique_ptr<protocol::Browser::Bounds> GetBrowserWindowBounds(
        .Build();
  }
  
@@ -75,6 +87,7 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
 +      return "picture_in_picture";
 +#endif
 +  }
++  return "normal";
 +}
 +
 +BrowserWindowInterface::Type ParseWindowType(const std::string& type_str) {
@@ -96,7 +109,8 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
 +}
 +
 +std::unique_ptr<protocol::Browser::WindowInfo> BuildWindowInfo(
-+    BrowserWindowInterface* bwi) {
++    BrowserWindowInterface* bwi,
++    bool is_hidden = false) {
 +  ui::BaseWindow* window = bwi->GetWindow();
 +  TabStripModel* tab_strip = bwi->GetTabStripModel();
 +
@@ -105,7 +119,7 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
 +                  .SetWindowType(GetBrowserWindowType(bwi->GetType()))
 +                  .SetBounds(GetBrowserWindowBounds(window))
 +                  .SetIsActive(bwi->IsActive())
-+                  .SetIsVisible(window->IsVisible())
++                  .SetIsVisible(!is_hidden && window->IsVisible())
 +                  .SetTabCount(tab_strip->count())
 +                  .Build();
 +
@@ -440,7 +454,7 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
    // Dispatcher can be null in tests.
    if (dispatcher)
      protocol::Browser::Dispatcher::wire(dispatcher, this);
-@@ -120,6 +525,65 @@ Response BrowserHandler::GetWindowForTarget(
+@@ -120,6 +532,65 @@ Response BrowserHandler::GetWindowForTarget(
    return Response::Success();
  }
  
@@ -506,7 +520,7 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
  Response BrowserHandler::GetWindowBounds(
      int window_id,
      std::unique_ptr<protocol::Browser::Bounds>* out_bounds) {
-@@ -297,3 +761,803 @@ protocol::Response BrowserHandler::AddPrivacySandboxEnrollmentOverride(
+@@ -297,3 +768,828 @@ protocol::Response BrowserHandler::AddPrivacySandboxEnrollmentOverride(
        net::SchemefulSite(url_to_add));
    return Response::Success();
  }
@@ -519,8 +533,10 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
 +  auto windows =
 +      std::make_unique<protocol::Array<protocol::Browser::WindowInfo>>();
 +  ForEachCurrentBrowserWindowInterfaceOrderedByActivation(
-+      [&windows](BrowserWindowInterface* bwi) {
-+        windows->push_back(BuildWindowInfo(bwi));
++      [&](BrowserWindowInterface* bwi) {
++        bool is_hidden =
++            hidden_window_ids_.contains(bwi->GetSessionID().id());
++        windows->push_back(BuildWindowInfo(bwi, is_hidden));
 +        return true;
 +      });
 +  *out_windows = std::move(windows);
@@ -532,7 +548,8 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
 +  BrowserWindowInterface* bwi =
 +      GetLastActiveBrowserWindowInterfaceWithAnyProfile();
 +  if (bwi) {
-+    *out_window = BuildWindowInfo(bwi);
++    bool is_hidden = hidden_window_ids_.contains(bwi->GetSessionID().id());
++    *out_window = BuildWindowInfo(bwi, is_hidden);
 +  }
 +  return Response::Success();
 +}
@@ -572,7 +589,17 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
 +  chrome::AddTabAt(browser, navigate_url, -1, true);
 +
 +  if (hidden.value_or(false)) {
-+    browser->window()->Hide();
++    // Move the window off-screen, then show it without stealing focus.
++    // This keeps the compositor active (so CDP operations like
++    // Page.captureScreenshot work) while making the window invisible.
++    // Widget::Hide() cannot be used because it disconnects the compositor
++    // at the platform level on all OSes.
++    gfx::Rect offscreen_bounds = browser->window()->GetBounds();
++    offscreen_bounds.set_origin(
++        gfx::Point(kOffScreenPosition, kOffScreenPosition));
++    browser->window()->SetBounds(offscreen_bounds);
++    browser->window()->ShowInactive();
++    hidden_window_ids_.insert(browser->session_id().id());
 +  } else {
 +    browser->window()->Show();
 +  }
@@ -583,7 +610,7 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
 +    return Response::ServerError("Failed to create window");
 +  }
 +
-+  *out_window = BuildWindowInfo(bwi);
++  *out_window = BuildWindowInfo(bwi, hidden.value_or(false));
 +  return Response::Success();
 +}
 +
@@ -592,6 +619,7 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
 +  if (!bwi) {
 +    return Response::ServerError("Browser window not found");
 +  }
++  hidden_window_ids_.erase(window_id);
 +  bwi->GetTabStripModel()->CloseAllTabs();
 +  bwi->GetWindow()->Close();
 +  return Response::Success();
@@ -611,6 +639,12 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
 +  if (!bwi) {
 +    return Response::ServerError("Browser window not found");
 +  }
++  if (hidden_window_ids_.contains(window_id)) {
++    gfx::Rect bounds = bwi->GetWindow()->GetBounds();
++    bounds.set_origin(gfx::Point(100, 100));
++    bwi->GetWindow()->SetBounds(bounds);
++    hidden_window_ids_.erase(window_id);
++  }
 +  bwi->GetWindow()->Show();
 +  return Response::Success();
 +}
@@ -620,7 +654,11 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
 +  if (!bwi) {
 +    return Response::ServerError("Browser window not found");
 +  }
-+  bwi->GetWindow()->Hide();
++  gfx::Rect offscreen_bounds = bwi->GetWindow()->GetBounds();
++  offscreen_bounds.set_origin(
++      gfx::Point(kOffScreenPosition, kOffScreenPosition));
++  bwi->GetWindow()->SetBounds(offscreen_bounds);
++  hidden_window_ids_.insert(window_id);
 +  return Response::Success();
 +}
 +
@@ -1310,3 +1348,4 @@ index 30bd52d09c3fc..053af0b50b3d7 100644
 +  *out_group = BuildTabGroupInfo(target_bwi, new_gid);
 +  return Response::Success();
 +}
++
