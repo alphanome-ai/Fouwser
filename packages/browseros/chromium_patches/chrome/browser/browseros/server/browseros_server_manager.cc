@@ -1,9 +1,9 @@
 diff --git a/chrome/browser/browseros/server/browseros_server_manager.cc b/chrome/browser/browseros/server/browseros_server_manager.cc
 new file mode 100644
-index 0000000000000..0d9d3f049581c
+index 0000000000000..9cd8a510e86ec
 --- /dev/null
 +++ b/chrome/browser/browseros/server/browseros_server_manager.cc
-@@ -0,0 +1,1072 @@
+@@ -0,0 +1,1076 @@
 +// Copyright 2024 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -417,18 +417,21 @@ index 0000000000000..0d9d3f049581c
 +    return;
 +  }
 +
-+  // Phase 1: Load user intent (prefs + CLI overrides).
-+  // Save stable port preferences so CLI overrides are persisted even when
-+  // the server is disabled or we lose the lock.
++  // Phase 1: Determine and resolve ports.
++  // Resolve runs unconditionally (even with --disable-server) so that
++  // CLI overrides are validated and persisted correctly.
 +  LoadPortsFromPrefs();
 +  SetupPrefObservers();
 +  ApplyCommandLineOverrides();
++  ResolvePortsForStartup();
 +  SavePortsToPrefs();
 +
 +  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
 +
-+  // Always start the CDP server unless --remote-debugging-port is set
-+  // (Chromium's own handler would overwrite ours since they share a singleton).
++  // Phase 2: Bind CDP to the resolved port.
++  // Must happen AFTER resolution — otherwise FindAvailablePort detects our
++  // own CDP binding as "port in use" and reassigns to a different port,
++  // causing the sidecar to connect to a port where nothing listens.
 +  if (!command_line->HasSwitch(::switches::kRemoteDebuggingPort)) {
 +    StartCDPServer();
 +  } else {
@@ -441,15 +444,12 @@ index 0000000000000..0d9d3f049581c
 +    return;
 +  }
 +
++  // Phase 3: Sidecar lifecycle — lock, recover orphans, launch.
 +  if (!AcquireLock()) {
 +    return;
 +  }
 +
-+  // Phase 2: We hold the lock — we're the active instance.
-+  // Now resolve actual available ports and save the final values.
 +  RecoverFromOrphan();
-+  ResolvePortsForStartup();
-+  SavePortsToPrefs();
 +
 +  LOG(INFO) << "browseros: Starting BrowserOS server";
 +
@@ -505,7 +505,11 @@ index 0000000000000..0d9d3f049581c
 +      base::FilePath(),
 +      base::FilePath());
 +
-+  LOG(INFO) << "browseros: CDP WebSocket server started at ws://127.0.0.1:"
++  // Note: StartRemoteDebuggingServer binds on the IO thread asynchronously.
++  // A synchronous port check here would race with the IO-thread bind and
++  // produce false failures. The port was validated as available by
++  // ResolvePortsForStartup() immediately before this call.
++  LOG(INFO) << "browseros: CDP WebSocket server requested at ws://127.0.0.1:"
 +            << ports_.cdp;
 +}
 +
