@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/chrome_browser_main.cc b/chrome/browser/chrome_browser_main.cc
-index 92a45baf84050..476d604b649fc 100644
+index 92a45baf84050..ee66fa7b857a7 100644
 --- a/chrome/browser/chrome_browser_main.cc
 +++ b/chrome/browser/chrome_browser_main.cc
 @@ -10,6 +10,7 @@
@@ -10,16 +10,15 @@ index 92a45baf84050..476d604b649fc 100644
  #include "base/base_switches.h"
  #include "base/check.h"
  #include "base/command_line.h"
-@@ -1233,6 +1234,8 @@ int ChromeBrowserMainParts::PreCreateThreadsImpl() {
+@@ -1233,6 +1234,7 @@ int ChromeBrowserMainParts::PreCreateThreadsImpl() {
    if (first_run::IsChromeFirstRun()) {
      if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kApp) &&
          !base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kAppId)) {
-+      browser_creator_->AddFirstRunTabs({GURL("chrome://browseros-first-run")});
-+      browser_creator_->AddFirstRunTabs({GURL("https://bit.ly/BrowserOS-setup")});
++      browser_creator_->AddFirstRunTabs({GURL("chrome://browseros-welcome")});
        browser_creator_->AddFirstRunTabs(master_prefs_->new_tabs);
      }
    }
-@@ -1252,6 +1255,43 @@ int ChromeBrowserMainParts::PreCreateThreadsImpl() {
+@@ -1252,6 +1254,43 @@ int ChromeBrowserMainParts::PreCreateThreadsImpl() {
    }
  #endif
  
@@ -63,7 +62,7 @@ index 92a45baf84050..476d604b649fc 100644
  #if BUILDFLAG(IS_MAC)
  #if defined(ARCH_CPU_X86_64)
    // The use of Rosetta to run the x64 version of Chromium on Arm is neither
-@@ -1812,6 +1852,12 @@ int ChromeBrowserMainParts::PreMainMessageLoopRunImpl() {
+@@ -1812,6 +1851,12 @@ int ChromeBrowserMainParts::PreMainMessageLoopRunImpl() {
      g_browser_process->CreateDevToolsAutoOpener();
    }
  
@@ -76,7 +75,7 @@ index 92a45baf84050..476d604b649fc 100644
    // Needs to be done before PostProfileInit, since the SODA Installer setup is
    // called inside PostProfileInit and depends on it.
    if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
-@@ -2099,6 +2145,11 @@ void ChromeBrowserMainParts::PostMainMessageLoopRun() {
+@@ -2099,6 +2144,11 @@ void ChromeBrowserMainParts::PostMainMessageLoopRun() {
      chrome_extra_part->PostMainMessageLoopRun();
    }
  

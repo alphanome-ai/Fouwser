@@ -1,11 +1,11 @@
-diff --git a/chrome/browser/ui/webui/nxtscape_first_run.h b/chrome/browser/ui/webui/nxtscape_first_run.h
+diff --git a/chrome/browser/ui/webui/browseros_welcome.h b/chrome/browser/ui/webui/browseros_welcome.h
 new file mode 100644
-index 0000000000000..69b8e5a79f6fd
+index 0000000000000..89503c57538ad
 --- /dev/null
-+++ b/chrome/browser/ui/webui/nxtscape_first_run.h
-@@ -0,0 +1,358 @@
-+#ifndef CHROME_BROWSER_UI_WEBUI_NXTSCAPE_FIRST_RUN_H_
-+#define CHROME_BROWSER_UI_WEBUI_NXTSCAPE_FIRST_RUN_H_
++++ b/chrome/browser/ui/webui/browseros_welcome.h
+@@ -0,0 +1,356 @@
++#ifndef CHROME_BROWSER_UI_WEBUI_BROWSEROS_WELCOME_H_
++#define CHROME_BROWSER_UI_WEBUI_BROWSEROS_WELCOME_H_
 +
 +#include "base/memory/ref_counted_memory.h"
 +#include "chrome/browser/profiles/profile.h"
@@ -15,11 +15,11 @@ index 0000000000000..69b8e5a79f6fd
 +#include "content/public/browser/webui_config.h"
 +#include "services/network/public/mojom/content_security_policy.mojom.h"
 +
-+class UFRDataSource : public content::URLDataSource {
++class BrowserOSWelcomeDataSource : public content::URLDataSource {
 + public:
-+  UFRDataSource() {}
-+  UFRDataSource(const UFRDataSource&) = delete;
-+  UFRDataSource& operator=(const UFRDataSource&) = delete;
++  BrowserOSWelcomeDataSource() {}
++  BrowserOSWelcomeDataSource(const BrowserOSWelcomeDataSource&) = delete;
++  BrowserOSWelcomeDataSource& operator=(const BrowserOSWelcomeDataSource&) = delete;
 +
 +  // URLDataSource implementation:
 +  std::string GetSource() override;
@@ -30,16 +30,15 @@ index 0000000000000..69b8e5a79f6fd
 +                        GotDataCallback callback) override;
 +};
 +
-+// Implementation of UFRDataSource
-+std::string UFRDataSource::GetSource() {
-+  return "browseros-first-run";
++std::string BrowserOSWelcomeDataSource::GetSource() {
++  return "browseros-welcome";
 +}
 +
-+std::string UFRDataSource::GetMimeType(const GURL& url) {
++std::string BrowserOSWelcomeDataSource::GetMimeType(const GURL& url) {
 +  return "text/html";
 +}
 +
-+std::string UFRDataSource::GetContentSecurityPolicy(network::mojom::CSPDirectiveName directive) {
++std::string BrowserOSWelcomeDataSource::GetContentSecurityPolicy(network::mojom::CSPDirectiveName directive) {
 +  if (directive == network::mojom::CSPDirectiveName::ScriptSrc)
 +    return "'unsafe-inline'";
 +  if (directive == network::mojom::CSPDirectiveName::StyleSrc)
@@ -51,14 +50,14 @@ index 0000000000000..69b8e5a79f6fd
 +  return std::string();
 +}
 +
-+void UFRDataSource::StartDataRequest(const GURL& url,
++void BrowserOSWelcomeDataSource::StartDataRequest(const GURL& url,
 +                                    const content::WebContents::Getter& wc_getter,
 +                                    GotDataCallback callback) {
 +  std::string source = R"(
 +<!DOCTYPE html>
 +<html lang="en">
 +<head>
-+<title>BrowserOS — First Run</title>
++<title>BrowserOS — Welcome</title>
 +<meta charset="UTF-8">
 + <meta name="color-scheme" content="light dark">
 +<style>
@@ -108,7 +107,7 @@ index 0000000000000..69b8e5a79f6fd
 + .subtle {color:var(--muted); font-size:.95rem; margin-top:.75rem;}
 + .badge-row{display:flex; justify-content:center; gap:.5rem; margin: .75rem 0 1rem;}
 + .badge{display:inline-flex; align-items:center; gap:.4rem; padding:.25rem .55rem; font-size:.75rem; color:var(--badge-text); border:1px solid var(--badge-border); border-radius:999px; background: var(--badge-bg); backdrop-filter: saturate(120%)}
-+ 
++
 + /* Buttons */
 +.actions{margin-top:1rem}
 +/* Remove stray space when no buttons are present */
@@ -128,22 +127,22 @@ index 0000000000000..69b8e5a79f6fd
 + .section-head .label .accent{color:var(--accent); font-style: normal}
 +
 + /* Light cards and groups */
-+ .group {background: var(--card); border:1px solid var(--border); border-radius: 1rem; padding:1.15rem 1.25rem; box-shadow: var(--shadow-md);} 
++ .group {background: var(--card); border:1px solid var(--border); border-radius: 1rem; padding:1.15rem 1.25rem; box-shadow: var(--shadow-md);}
 + .group + .group {margin-top:1rem;}
 + .title {font-size:1.15rem; color:var(--text); margin-bottom:.5rem;}
 +
 + /* Legacy CTA (kept for quick link outside buttons) */
 + .cta {display:inline-block; margin-top:.75rem; padding:.85rem 1.25rem; border-radius:999px; color:#fff; background: linear-gradient(90deg,#6366f1,#8b5cf6); box-shadow:0 12px 26px rgba(99,102,241,.28); font-weight:700}
-+ .cta:hover{filter:brightness(1.05);} 
++ .cta:hover{filter:brightness(1.05);}
 +
 + /* Cards grid */
 + .grid {display:grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap:1.25rem;}
 + .grid.features{grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap:1.5rem; row-gap:2rem; grid-auto-flow: row;}
-+ @media (max-width: 720px){ 
++ @media (max-width: 720px){
 +  .grid.features{grid-template-columns: 1fr; row-gap:1.25rem;}
 +  .features .card{height:auto; padding:1rem 1.15rem}
 + }
-+ .card {background:var(--card); border:1px solid var(--border); border-radius:1rem; padding:1.1rem 1.25rem; color:var(--text); box-shadow: var(--shadow-lg);} 
++ .card {background:var(--card); border:1px solid var(--border); border-radius:1rem; padding:1.1rem 1.25rem; color:var(--text); box-shadow: var(--shadow-lg);}
 + .card h3 {margin:.15rem 0 .6rem; font-size:1.06rem; color:var(--text); font-weight:700;}
 + .note {margin-top:.7rem; font-size:.92rem; color:var(--note-text); border:1px dashed var(--note-border); background:var(--note-bg); padding:.6rem .75rem; border-radius:.5rem}
 +
@@ -202,8 +201,7 @@ index 0000000000000..69b8e5a79f6fd
 +<section>
 + <div class="section-head"><span class="label">🚀 Getting Started</span></div>
 + <div style="text-align:center;">
-+  <a class="btn btn-accent" href="https://bit.ly/BrowserOS-setup">Quick start guide</a>
-+  <a class="btn btn-outline" href="https://github.com/nxtscape/nxtscape">
++  <a class="btn btn-outline" href="https://github.com/browseros-ai/BrowserOS">
 +   <span class="icon" aria-hidden="true">
 +    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#eac54f"><path d="m354-287 126-76 126 77-33-144 111-96-146-13-58-136-58 135-146 13 111 97-33 143ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-350Z"/></svg>
 +   </span>
@@ -249,7 +247,7 @@ index 0000000000000..69b8e5a79f6fd
 +   </span>
 +   Step 3: All done!
 +  </div>
-+  <div class="muted" style="margin-top:.4rem">You're ready to use BrowserOS, have fun! This page can be always accessed again at <a href="chrome://browseros-first-run"><code>chrome://browseros-first-run</code></a></div>
++  <div class="muted" style="margin-top:.4rem">You're ready to use BrowserOS, have fun! This page can be always accessed again at <a href="chrome://browseros-welcome"><code>chrome://browseros-welcome</code></a></div>
 + </div>
 +</section>
 +
@@ -336,7 +334,7 @@ index 0000000000000..69b8e5a79f6fd
 +   Twitter
 +  </a>
 + </p>
-+ <p class="subtle" style="text-align:center;">Have questions or want to contribute? We’d love to hear from you.</p>
++ <p class="subtle" style="text-align:center;">Have questions or want to contribute? We'd love to hear from you.</p>
 +</section>
 +
 +<!-- No script needed for this static page -->
@@ -346,19 +344,19 @@ index 0000000000000..69b8e5a79f6fd
 +  std::move(callback).Run(base::MakeRefCounted<base::RefCountedString>(std::move(source)));
 +}
 +
-+class NxtscapeFirstRun;
-+class NxtscapeFirstRunUIConfig : public content::DefaultWebUIConfig<NxtscapeFirstRun> {
++class BrowserOSWelcome;
++class BrowserOSWelcomeUIConfig : public content::DefaultWebUIConfig<BrowserOSWelcome> {
 +  public:
-+   NxtscapeFirstRunUIConfig() : DefaultWebUIConfig("chrome", "browseros-first-run") {}
++   BrowserOSWelcomeUIConfig() : DefaultWebUIConfig("chrome", "browseros-welcome") {}
 +};
 +
-+class NxtscapeFirstRun : public content::WebUIController {
++class BrowserOSWelcome : public content::WebUIController {
 + public:
-+  NxtscapeFirstRun(content::WebUI* web_ui) : content::WebUIController(web_ui) {
-+    content::URLDataSource::Add(Profile::FromWebUI(web_ui), std::make_unique<UFRDataSource>());
++  BrowserOSWelcome(content::WebUI* web_ui) : content::WebUIController(web_ui) {
++    content::URLDataSource::Add(Profile::FromWebUI(web_ui), std::make_unique<BrowserOSWelcomeDataSource>());
 +  }
-+  NxtscapeFirstRun(const NxtscapeFirstRun&) = delete;
-+  NxtscapeFirstRun& operator=(const NxtscapeFirstRun&) = delete;
++  BrowserOSWelcome(const BrowserOSWelcome&) = delete;
++  BrowserOSWelcome& operator=(const BrowserOSWelcome&) = delete;
 +};
 +
-+#endif  // CHROME_BROWSER_UI_WEBUI_NXTSCAPE_FIRST_RUN_H_
++#endif  // CHROME_BROWSER_UI_WEBUI_BROWSEROS_WELCOME_H_
