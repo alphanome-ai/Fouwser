@@ -118,6 +118,8 @@ def copy_browser_files(
         "libGLESv2.so",
         "libvk_swiftshader.so",
         "libvulkan.so.1",
+        "libqt5_shim.so",
+        "libqt6_shim.so",
         "vk_swiftshader_icd.json",
         "icudtl.dat",
         "snapshot_blob.bin",
@@ -193,25 +195,32 @@ StartupWMClass=chromium-browser
 
 
 def copy_icon(ctx: Context, icons_dir: Path) -> bool:
-    """Copy product icon to hicolor icon directory.
+    """Copy product icons at multiple sizes to hicolor icon directory.
 
     Args:
         ctx: Build context
         icons_dir: Base icons directory (usr/share/icons/hicolor)
 
     Returns:
-        True if icon was copied, False if not found
+        True if at least one icon was copied, False if none found
     """
-    icon_src = Path(join_paths(ctx.root_dir, "resources", "icons", "product_logo.png"))
-    if not icon_src.exists():
-        log_warning("  ⚠ Icon not found at resources/icons/product_logo.png")
-        return False
+    icons_base = Path(join_paths(ctx.root_dir, "resources", "icons"))
+    copied = False
 
-    icon_dest = Path(join_paths(icons_dir, "256x256", "apps", "browseros.png"))
-    icon_dest.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(icon_src, icon_dest)
-    log_info("  ✓ Copied icon")
-    return True
+    for size in [16, 22, 24, 32, 48, 64, 128, 256]:
+        icon_src = Path(join_paths(icons_base, f"product_logo_{size}.png"))
+        if icon_src.exists():
+            icon_dest = Path(join_paths(icons_dir, f"{size}x{size}", "apps", "browseros.png"))
+            icon_dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(icon_src, icon_dest)
+            copied = True
+
+    if copied:
+        log_info("  ✓ Copied icons (multiple sizes)")
+    else:
+        log_warning("  ⚠ No icon files found in resources/icons/")
+
+    return copied
 
 
 # =============================================================================
@@ -237,8 +246,7 @@ def prepare_appdir(ctx: Context, appdir: Path) -> bool:
         apps_dir, f"/opt/browseros/{ctx.BROWSEROS_APP_NAME}"
     )
 
-    # Copy icon
-    icon_src = Path(join_paths(ctx.root_dir, "resources", "icons", "product_logo.png"))
+    # Copy icons (multiple sizes)
     copy_icon(ctx, icons_dir)
 
     # AppImage-specific: Copy desktop file to root and update Exec line
@@ -250,7 +258,10 @@ def prepare_appdir(ctx: Context, appdir: Path) -> bool:
     )
     appdir_desktop.write_text(desktop_content)
 
-    # AppImage-specific: Copy icon to root
+    # AppImage-specific: Copy icon to root (256px for best quality)
+    icon_src = Path(join_paths(ctx.root_dir, "resources", "icons", "product_logo_256.png"))
+    if not icon_src.exists():
+        icon_src = Path(join_paths(ctx.root_dir, "resources", "icons", "product_logo.png"))
     if icon_src.exists():
         appdir_icon = Path(join_paths(appdir, "browseros.png"))
         shutil.copy2(icon_src, appdir_icon)
@@ -381,6 +392,8 @@ Section: web
 Priority: optional
 Architecture: {deb_arch}
 Depends: libc6 (>= 2.31), libglib2.0-0, libnss3, libnspr4, libx11-6, libatk1.0-0, libatk-bridge2.0-0, libcups2, libasound2, libdrm2, libgbm1, libpango-1.0-0, libcairo2, libudev1, libxcomposite1, libxdamage1, libxrandr2, libxkbcommon0, libgtk-3-0
+Provides: www-browser, gnome-www-browser
+Recommends: apparmor
 Maintainer: BrowserOS Team <support@browseros.com>
 Homepage: https://www.browseros.com/
 Description: BrowserOS - The open source agentic browser
@@ -394,11 +407,7 @@ Description: BrowserOS - The open source agentic browser
 
 
 def create_postinst_script(debian_dir: Path) -> None:
-    """Create DEBIAN/postinst script to set SUID on chrome_sandbox.
-
-    Debian policy prohibits setting SUID in package files directly,
-    so we set it in postinst after installation.
-    """
+    """Create DEBIAN/postinst script for sandbox, AppArmor, and alternatives."""
     postinst_content = """#!/bin/sh
 # Post-installation script for BrowserOS
 set -e
@@ -406,6 +415,17 @@ set -e
 # Set SUID bit on chrome_sandbox for sandboxing support
 if [ -f /usr/lib/browseros/chrome_sandbox ]; then
     chmod 4755 /usr/lib/browseros/chrome_sandbox
+fi
+
+# Load AppArmor profile (required for Ubuntu 23.10+ user namespace restrictions)
+if [ -d /etc/apparmor.d ] && command -v apparmor_parser >/dev/null 2>&1; then
+    apparmor_parser -r -T -W /etc/apparmor.d/browseros 2>/dev/null || true
+fi
+
+# Register as a selectable default browser
+if [ "$1" = "configure" ]; then
+    update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/browseros 40
+    update-alternatives --install /usr/bin/gnome-www-browser gnome-www-browser /usr/bin/browseros 40
 fi
 
 exit 0
@@ -417,6 +437,120 @@ exit 0
     log_info("  ✓ Created DEBIAN/postinst")
 
 
+def create_prerm_script(debian_dir: Path) -> None:
+    """Create DEBIAN/prerm script to clean up on removal."""
+    prerm_content = """#!/bin/sh
+# Pre-removal script for BrowserOS
+set -e
+
+# Unregister as default browser
+if [ "$1" = "remove" ] || [ "$1" = "deconfigure" ]; then
+    update-alternatives --remove x-www-browser /usr/bin/browseros 2>/dev/null || true
+    update-alternatives --remove gnome-www-browser /usr/bin/browseros 2>/dev/null || true
+fi
+
+# Unload AppArmor profile before files are removed
+if command -v apparmor_parser >/dev/null 2>&1 && [ -f /etc/apparmor.d/browseros ]; then
+    apparmor_parser -R /etc/apparmor.d/browseros 2>/dev/null || true
+fi
+
+exit 0
+"""
+
+    prerm_path = Path(join_paths(debian_dir, "prerm"))
+    prerm_path.write_text(prerm_content)
+    prerm_path.chmod(0o755)
+    log_info("  ✓ Created DEBIAN/prerm")
+
+
+def create_apparmor_profile(ctx: Context, apparmor_dir: Path) -> None:
+    """Create AppArmor profile that permits unprivileged user namespaces.
+
+    Ubuntu 23.10+ restricts unprivileged user namespaces via AppArmor.
+    Without this profile, the Chromium sandbox cannot create namespaces
+    and the browser fatally crashes on launch (see GitHub issue #165).
+    """
+    apparmor_dir.mkdir(parents=True, exist_ok=True)
+
+    profile_content = f"""# AppArmor profile for BrowserOS
+# This profile allows everything and only exists to give the application
+# a name instead of having the label "unconfined", and to grant permission
+# to create unprivileged user namespaces (required for Chromium sandbox on
+# Ubuntu 23.10+ and other distros that restrict userns via AppArmor).
+
+abi <abi/4.0>,
+include <tunables/global>
+
+profile browseros /usr/lib/browseros/{ctx.BROWSEROS_APP_NAME} flags=(unconfined) {{
+  userns,
+
+  include if exists <local/browseros>
+}}
+"""
+
+    profile_path = Path(join_paths(apparmor_dir, "browseros"))
+    profile_path.write_text(profile_content)
+    log_info("  ✓ Created AppArmor profile")
+
+
+def create_metainfo_file(ctx: Context, metainfo_dir: Path) -> None:
+    """Create AppStream metainfo file for software center discoverability.
+
+    Installs to /usr/share/metainfo/ so GNOME Software, KDE Discover,
+    and other AppStream-aware tools can display BrowserOS in their catalogs.
+    """
+    metainfo_dir.mkdir(parents=True, exist_ok=True)
+
+    version = ctx.get_browseros_chromium_version()
+    version = version.lstrip("v").replace(" ", "").replace("_", ".")
+
+    metainfo_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>browseros.desktop</id>
+  <launchable type="desktop-id">browseros.desktop</launchable>
+  <name>BrowserOS</name>
+  <developer id="com.browseros">
+    <name>BrowserOS Team</name>
+  </developer>
+  <summary>The open source agentic browser</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>BSD-3-Clause and LGPL-2.1+ and Apache-2.0 and IJG and MIT and GPL-2.0+ and ISC and OpenSSL and (MPL-1.1 or GPL-2.0 or LGPL-2.0)</project_license>
+  <url type="homepage">https://www.browseros.com/</url>
+  <url type="bugtracker">https://github.com/browseros-ai/BrowserOS/issues</url>
+  <url type="help">https://docs.browseros.com/</url>
+  <description>
+    <p>
+      BrowserOS is a privacy-focused web browser built on Chromium,
+      designed for modern web browsing with AI capabilities.
+    </p>
+    <p>
+      Browse the web with built-in agentic AI features that help you
+      automate tasks and interact with web pages intelligently.
+    </p>
+  </description>
+  <categories>
+    <category>Network</category>
+    <category>WebBrowser</category>
+  </categories>
+  <keywords>
+    <keyword>web browser</keyword>
+    <keyword>chromium</keyword>
+    <keyword>ai</keyword>
+    <keyword>agentic</keyword>
+    <keyword>privacy</keyword>
+  </keywords>
+  <releases>
+    <release version="{version}" />
+  </releases>
+  <content_rating type="oars-1.1" />
+</component>
+"""
+
+    metainfo_path = Path(join_paths(metainfo_dir, "browseros.metainfo.xml"))
+    metainfo_path.write_text(metainfo_content)
+    log_info("  ✓ Created AppStream metainfo")
+
+
 def prepare_debdir(ctx: Context, debdir: Path) -> bool:
     """Prepare directory structure for .deb package.
 
@@ -424,7 +558,11 @@ def prepare_debdir(ctx: Context, debdir: Path) -> bool:
     debdir/
     ├── DEBIAN/
     │   ├── control
-    │   └── postinst
+    │   ├── postinst
+    │   └── prerm
+    ├── etc/
+    │   └── apparmor.d/
+    │       └── browseros
     ├── usr/
     │   ├── bin/
     │   │   └── browseros (launcher script)
@@ -432,7 +570,8 @@ def prepare_debdir(ctx: Context, debdir: Path) -> bool:
     │   │   └── [all browser files]
     │   └── share/
     │       ├── applications/browseros.desktop
-    │       └── icons/hicolor/256x256/apps/browseros.png
+    │       ├── icons/hicolor/{16..256}x{16..256}/apps/browseros.png
+    │       └── metainfo/browseros.metainfo.xml
     """
     log_info("📁 Preparing .deb directory structure...")
 
@@ -441,7 +580,9 @@ def prepare_debdir(ctx: Context, debdir: Path) -> bool:
     share_dir = join_paths(debdir, "usr", "share")
     apps_dir = join_paths(share_dir, "applications")
     icons_dir = join_paths(share_dir, "icons", "hicolor")
+    metainfo_dir = join_paths(share_dir, "metainfo")
     debian_dir = join_paths(debdir, "DEBIAN")
+    apparmor_dir = join_paths(debdir, "etc", "apparmor.d")
 
     # Copy browser files (without SUID, will be set in postinst)
     if not copy_browser_files(ctx, lib_dir, set_sandbox_suid=False):
@@ -453,12 +594,19 @@ def prepare_debdir(ctx: Context, debdir: Path) -> bool:
     # Create desktop file
     create_desktop_file(apps_dir, "/usr/bin/browseros")
 
-    # Copy icon
+    # Copy icons (multiple sizes for hicolor theme)
     copy_icon(ctx, icons_dir)
+
+    # Create AppStream metainfo for software center discoverability
+    create_metainfo_file(ctx, metainfo_dir)
+
+    # Install AppArmor profile (fixes crash on Ubuntu 23.10+)
+    create_apparmor_profile(ctx, apparmor_dir)
 
     # Create DEBIAN metadata files
     create_control_file(ctx, debian_dir)
     create_postinst_script(debian_dir)
+    create_prerm_script(debian_dir)
 
     log_success("✓ .deb directory prepared")
     return True
