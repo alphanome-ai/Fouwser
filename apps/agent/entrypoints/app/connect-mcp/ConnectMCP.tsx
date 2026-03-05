@@ -214,21 +214,21 @@ export const ConnectMCP: FC = () => {
       {/* Header */}
       <div className="rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-orange)]/10">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
             <Server className="h-6 w-6 text-[var(--accent-orange)]" />
           </div>
           <div className="flex-1">
             <h2 className="mb-1 font-semibold text-xl">Connected Apps</h2>
             <p className="mb-6 text-muted-foreground text-sm">
-              Connect BrowserOS assistant to apps to send email, schedule
-              calendar events, write docs, and more
+              Connect Fouwser assistant to apps to send email, schedule calendar
+              events, write docs, and more
             </p>
 
             <div className="flex flex-wrap gap-3">
               <Button
                 variant="outline"
                 onClick={() => setAddingManagedMcp(true)}
-                className="border-[var(--accent-orange)] bg-[var(--accent-orange)]/10 text-[var(--accent-orange)] hover:bg-[var(--accent-orange)]/20"
+                className="border-[var(--accent-orange)] bg-primary/10 text-[var(--accent-orange)] hover:bg-primary/20"
               >
                 <Plus className="h-4 w-4" />
                 <span>Add built-in app</span>
@@ -256,7 +256,7 @@ export const ConnectMCP: FC = () => {
                 key={server.id}
                 className="flex items-center gap-4 rounded-lg border border-border bg-background p-4 transition-all hover:border-[var(--accent-orange)]/50 hover:shadow-sm"
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-orange)]/10">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                   <McpServerIcon
                     serverName={server.managedServerName ?? ''}
                     size={20}
@@ -269,7 +269,7 @@ export const ConnectMCP: FC = () => {
                     <span
                       className={`rounded px-2 py-0.5 font-medium text-xs ${
                         server.type === 'managed'
-                          ? 'bg-[var(--accent-orange)]/10 text-[var(--accent-orange)]'
+                          ? 'bg-primary/10 text-[var(--accent-orange)]'
                           : 'bg-muted text-muted-foreground'
                       }`}
                     >

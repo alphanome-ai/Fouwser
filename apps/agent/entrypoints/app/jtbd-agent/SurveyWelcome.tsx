@@ -10,7 +10,7 @@ interface Props {
 export const Welcome: FC<Props> = ({ onStart, isLoading }) => {
   return (
     <div className="rounded-xl border border-border bg-card p-8 text-center shadow-sm">
-      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--accent-orange)]/10">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
         <Sparkles className="h-8 w-8 text-[var(--accent-orange)]" />
       </div>
       <h3 className="mb-2 font-semibold text-lg">Share Your Experience</h3>

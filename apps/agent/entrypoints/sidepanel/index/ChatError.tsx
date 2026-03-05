@@ -31,14 +31,14 @@ function parseErrorMessage(message: string): {
     message.includes('127.0.0.1')
   ) {
     return {
-      text: 'Unable to connect to BrowserOS agent. Follow below instructions.',
+      text: 'Unable to connect to Fouwser agent. Follow below instructions.',
       url: 'https://docs.browseros.com/troubleshooting/connection-issues',
       isConnectionError: true,
     }
   }
 
   // Detect BrowserOS rate limit (unique pattern, no provider uses this)
-  if (message.includes('BrowserOS LLM daily limit reached')) {
+  if (message.includes('Fouwser LLM daily limit reached')) {
     return {
       text: 'Add your own API key for unlimited usage.',
       url: 'https://dub.sh/browseros-usage-limit',

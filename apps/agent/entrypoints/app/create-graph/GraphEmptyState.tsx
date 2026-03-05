@@ -63,7 +63,7 @@ export const GraphEmptyState: FC<GraphEmptyStateProps> = ({
             type="button"
             key={suggestion.display}
             onClick={() => onSuggestionClick(suggestion.prompt)}
-            className="group flex items-center justify-between rounded-lg border border-border/50 bg-card px-3 py-2.5 text-left text-xs transition-all duration-200 hover:border-[var(--accent-orange)]/50 hover:bg-[var(--accent-orange)]/5"
+            className="group flex items-center justify-between rounded-lg border border-border/50 bg-card px-3 py-2.5 text-left text-xs transition-all duration-200 hover:border-[var(--accent-orange)]/50 hover:bg-primary/5"
           >
             {suggestion.display}
             <span className="opacity-0 transition-opacity duration-200 group-hover:opacity-100">

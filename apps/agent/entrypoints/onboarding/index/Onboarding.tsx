@@ -1,10 +1,10 @@
 import { ArrowRight } from 'lucide-react'
 import { type FC, useEffect, useState } from 'react'
 import { NavLink } from 'react-router'
-import { PillIndicator } from '@/components/elements/pill-indicator'
+// import { PillIndicator } from '@/components/elements/pill-indicator'
 import { Button } from '@/components/ui/button'
 import { ONBOARDING_STARTED_EVENT } from '@/lib/constants/analyticsEvents'
-import { productRepositoryShortUrl } from '@/lib/constants/productUrls'
+// import { productRepositoryShortUrl } from '@/lib/constants/productUrls'
 import { getCurrentYear } from '@/lib/getCurrentYear'
 import { track } from '@/lib/metrics/track'
 import { FocusGrid } from './FocusGrid'
@@ -27,25 +27,24 @@ export const Onboarding: FC = () => {
 
         <div className="relative w-full max-w-6xl">
           <div className="space-y-6 text-center">
-            <PillIndicator
+            {/* <PillIndicator
               text="Open-Source Agentic Browser"
               className={`transition-all delay-100 duration-700 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
-            />
+            /> */}
 
             <h1
               className={`text-balance font-semibold text-5xl leading-[1.1] tracking-tight transition-all delay-200 duration-700 md:text-7xl ${mounted ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
             >
               Welcome to{' '}
               <span className="inline-block animate-glow-once text-accent-orange">
-                BrowserOS
+                Fouwser
               </span>
             </h1>
 
             <p
               className={`mx-auto max-w-2xl text-pretty text-muted-foreground text-xl leading-relaxed transition-all delay-300 duration-700 md:text-2xl ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
             >
-              Turn your words into actions. Privacy-first alternative to ChatGPT
-              Atlas, Perplexity Comet and Dia!
+              The Browser build for Founders. The Browser build for You!
             </p>
 
             <div
@@ -61,7 +60,7 @@ export const Onboarding: FC = () => {
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </NavLink>
               </Button>
-              <Button
+              {/* <Button
                 size="lg"
                 asChild
                 variant="outline"
@@ -74,7 +73,7 @@ export const Onboarding: FC = () => {
                 >
                   View on GitHub
                 </a>
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
@@ -83,7 +82,7 @@ export const Onboarding: FC = () => {
       <footer className="border-border/40 border-t py-8">
         <div className="mx-auto max-w-7xl px-6">
           <p className="text-center text-muted-foreground text-sm">
-            BrowserOS © {getCurrentYear()} - The Open-Source Agentic Browser
+            Fouwser © {getCurrentYear()} - Alphanome.ai
           </p>
         </div>
       </footer>

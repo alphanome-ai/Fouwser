@@ -133,7 +133,7 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
         <div className="w-full max-w-md space-y-6">
           <div className="space-y-2 text-center">
             <h2 className="font-bold text-3xl tracking-tight">
-              Sign in to BrowserOS
+              Sign in to Fouwser
             </h2>
             <p className="text-base text-muted-foreground">
               Sync your settings and unlock cloud features
@@ -187,7 +187,7 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
             </div>
             <Button
               type="submit"
-              className="w-full bg-[var(--accent-orange)] text-white hover:bg-[var(--accent-orange)]/90"
+              className="w-full bg-primary text-white hover:bg-primary/90"
               disabled={state === 'loading' || !email.trim()}
             >
               {state === 'loading' ? (

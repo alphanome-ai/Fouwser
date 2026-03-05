@@ -51,7 +51,7 @@ export const MCPToolsSection: FC<MCPToolsSectionProps> = ({
             size="icon"
             onClick={onRefresh}
             disabled={isLoading}
-            className="border-[var(--accent-orange)] bg-[var(--accent-orange)]/10 text-[var(--accent-orange)] hover:bg-[var(--accent-orange)]/20 hover:text-[var(--accent-orange)]"
+            className="border-[var(--accent-orange)] bg-primary/10 text-[var(--accent-orange)] hover:bg-primary/20 hover:text-[var(--accent-orange)]"
             title="Refresh tools"
           >
             {isLoading ? (

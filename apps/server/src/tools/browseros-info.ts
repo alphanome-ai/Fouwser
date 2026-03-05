@@ -107,7 +107,7 @@ function getTopicContent(topic: string): string {
 export const browseros_info = defineTool({
   name: 'browseros_info',
   description:
-    'Get information about BrowserOS features, capabilities, and documentation links. Use when users ask "What is BrowserOS?", "What can BrowserOS do?", or about specific features.',
+    'Get information about Fouwser features, capabilities, and documentation links. Use when users ask "What is BrowserOS?", "What can BrowserOS do?", or about specific features.',
   input: z.object({
     topic: z
       .enum(VALID_TOPICS)

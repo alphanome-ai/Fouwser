@@ -299,7 +299,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
           <button
             type="submit"
             disabled={!input.trim()}
-            className="absolute right-1.5 bottom-1.5 cursor-pointer rounded-full bg-[var(--accent-orange)] p-2 text-white shadow-sm transition-all duration-200 hover:bg-[var(--accent-orange-bright)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="absolute right-1.5 bottom-1.5 cursor-pointer rounded-full bg-primary p-2 text-white shadow-sm transition-all duration-200 hover:bg-[var(--accent-orange-bright)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send className="h-3.5 w-3.5" />
             <span className="sr-only">Send</span>

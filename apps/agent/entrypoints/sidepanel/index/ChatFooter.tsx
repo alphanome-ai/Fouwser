@@ -126,7 +126,7 @@ export const ChatFooter: FC<ChatFooterProps> = ({
                   <div className="relative">
                     <Folder className="h-4 w-4" />
                     {selectedFolder && (
-                      <div className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-[var(--accent-orange)]" />
+                      <div className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
                     )}
                   </div>
                   <ChevronDown className="h-3 w-3" />

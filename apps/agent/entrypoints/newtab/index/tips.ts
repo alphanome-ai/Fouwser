@@ -41,7 +41,7 @@ export const TIPS: Tip[] = [
   },
   {
     id: 'claude-code-mcp',
-    text: 'Connect BrowserOS to Claude Code to control tabs, clicks, and pages from your terminal.',
+    text: 'Connect Fouwser to Claude Code with the MCP integration for full browser control from your terminal.',
   },
   {
     id: 'mcp-servers',
@@ -69,7 +69,7 @@ export const TIPS: Tip[] = [
   },
   {
     id: 'ad-blocking',
-    text: 'BrowserOS supports uBlock Origin for ad blocking — install it from the Chrome Web Store or GitHub.',
+    text: 'Fouwser supports uBlock Origin for ad blocking — install it from the Chrome Web Store or GitHub.',
   },
   {
     id: 'at-mention-tabs',

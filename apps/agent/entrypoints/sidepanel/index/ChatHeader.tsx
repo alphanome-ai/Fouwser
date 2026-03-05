@@ -1,10 +1,11 @@
-import { Github, History, Plus, SettingsIcon } from 'lucide-react'
+import { History, Plus, SettingsIcon } from 'lucide-react'
+// import { Github } from 'lucide-react'
 import type { FC } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { ChatProviderSelector } from '@/components/chat/ChatProviderSelector'
 import type { Provider } from '@/components/chat/chatComponentTypes'
 import { ThemeToggle } from '@/components/elements/theme-toggle'
-import { productRepositoryUrl } from '@/lib/constants/productUrls'
+// import { productRepositoryUrl } from '@/lib/constants/productUrls'
 import { BrowserOSIcon, ProviderIcon } from '@/lib/llm-providers/providerIcons'
 import type { ProviderType } from '@/lib/llm-providers/types'
 
@@ -92,7 +93,7 @@ export const ChatHeader: FC<ChatHeaderProps> = ({
           </Link>
         )}
 
-        <a
+        {/* <a
           href={productRepositoryUrl}
           target="_blank"
           rel="noopener noreferrer"
@@ -100,7 +101,7 @@ export const ChatHeader: FC<ChatHeaderProps> = ({
           title="Star on Github"
         >
           <Github className="h-4 w-4" />
-        </a>
+        </a> */}
 
         <a
           href="/app.html#/settings"

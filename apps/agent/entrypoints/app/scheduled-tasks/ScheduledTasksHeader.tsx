@@ -19,7 +19,7 @@ export const ScheduledTasksHeader: FC<ScheduledTasksHeaderProps> = ({
   return (
     <div className="rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md">
       <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-orange)]/10">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
           <CalendarClock className="h-6 w-6 text-[var(--accent-orange)]" />
         </div>
         <div className="flex-1">
@@ -49,7 +49,7 @@ export const ScheduledTasksHeader: FC<ScheduledTasksHeaderProps> = ({
         </div>
         <Button
           onClick={onAddClick}
-          className="border-[var(--accent-orange)] bg-[var(--accent-orange)]/10 text-[var(--accent-orange)] hover:bg-[var(--accent-orange)]/20 hover:text-[var(--accent-orange)]"
+          className="border-[var(--accent-orange)] bg-primary/10 text-[var(--accent-orange)] hover:bg-primary/20 hover:text-[var(--accent-orange)]"
           variant="outline"
         >
           <Plus className="mr-1.5 h-4 w-4" />

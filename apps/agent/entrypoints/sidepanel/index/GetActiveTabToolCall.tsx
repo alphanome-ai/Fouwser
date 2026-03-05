@@ -43,7 +43,7 @@ export const GetActiveTabToolCall: FC<GetActiveTabToolCallProps> = ({
         )}
 
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-sm bg-[var(--accent-orange)]/10">
+          <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-sm bg-primary/10">
             <ExternalLink className="h-2.5 w-2.5 text-[var(--accent-orange)]" />
           </div>
           <span className="font-medium text-muted-foreground text-xs">
@@ -53,9 +53,9 @@ export const GetActiveTabToolCall: FC<GetActiveTabToolCallProps> = ({
 
         {isLoading && (
           <div className="flex items-center gap-1">
-            <span className="h-1 w-1 animate-bounce rounded-full bg-[var(--accent-orange)] [animation-delay:-0.3s]" />
-            <span className="h-1 w-1 animate-bounce rounded-full bg-[var(--accent-orange)] [animation-delay:-0.15s]" />
-            <span className="h-1 w-1 animate-bounce rounded-full bg-[var(--accent-orange)]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-primary [animation-delay:-0.3s]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-primary" />
           </div>
         )}
       </button>

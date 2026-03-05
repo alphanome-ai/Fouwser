@@ -38,7 +38,7 @@ export const SidebarUserFooter: FC<SidebarUserFooterProps> = ({
 
   const aboutLink = (
     <a
-      href="https://docs.browseros.com/"
+      href="https://yourlogin.page/wIzyIs-fouwser-iv/fouwser-iv/"
       target="_blank"
       rel="noopener noreferrer"
       className="flex h-9 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md px-3 font-medium text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -50,7 +50,7 @@ export const SidebarUserFooter: FC<SidebarUserFooterProps> = ({
           expanded ? 'opacity-100' : 'opacity-0',
         )}
       >
-        About BrowserOS
+        About Fouwser
       </span>
     </a>
   )
@@ -90,7 +90,7 @@ export const SidebarUserFooter: FC<SidebarUserFooterProps> = ({
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>{aboutLink}</TooltipTrigger>
-            <TooltipContent side="right">About BrowserOS</TooltipContent>
+            <TooltipContent side="right">About Fouwser</TooltipContent>
           </Tooltip>
         )}
       </div>

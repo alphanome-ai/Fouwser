@@ -38,7 +38,7 @@ export const ProviderCard: FC<ProviderCardProps> = ({
       className={cn(
         'group flex w-full cursor-pointer items-center gap-4 rounded-xl border p-4 text-left transition-all',
         isSelected
-          ? 'border-[var(--accent-orange)] bg-[var(--accent-orange)]/5 shadow-md'
+          ? 'border-[var(--accent-orange)] bg-primary/5 shadow-md'
           : 'border-border bg-card hover:border-[var(--accent-orange)]/50 hover:shadow-sm',
       )}
     >
@@ -54,13 +54,13 @@ export const ProviderCard: FC<ProviderCardProps> = ({
         className={cn(
           'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all',
           isSelected
-            ? 'border-[var(--accent-orange)] bg-[var(--accent-orange)]'
+            ? 'border-[var(--accent-orange)] bg-primary'
             : 'border-border',
         )}
       >
         {isSelected && <Check className="h-3 w-3 text-white" />}
       </div>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-orange)]/10 text-[var(--accent-orange)]">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-[var(--accent-orange)]">
         {isBuiltIn ? (
           <BrowserOSIcon size={24} />
         ) : (
@@ -73,7 +73,7 @@ export const ProviderCard: FC<ProviderCardProps> = ({
           {isSelected && (
             <Badge
               variant="secondary"
-              className="rounded bg-[var(--accent-orange)]/10 text-[var(--accent-orange)]"
+              className="rounded bg-primary/10 text-[var(--accent-orange)]"
             >
               DEFAULT
             </Badge>
@@ -86,23 +86,19 @@ export const ProviderCard: FC<ProviderCardProps> = ({
         )}
         <p className="truncate text-muted-foreground text-sm">
           {isBuiltIn ? (
-            kimiLaunch ? (
-              'Extended usage limits for the next 2 weeks!'
-            ) : (
-              <>
-                BrowserOS-hosted model with strict rate limits.{' '}
-                <a
-                  href="https://docs.browseros.com/features/bring-your-own-llm"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-foreground"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Bring your own key
-                </a>{' '}
-                for better performance.
-              </>
-            )
+            <>
+              Fouwser-hosted model with strict rate limits.{' '}
+              <a
+                href="https://docs.browseros.com/features/bring-your-own-llm"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Bring your own key
+              </a>{' '}
+              for better performance.
+            </>
           ) : (
             `${provider.modelId} • ${provider.baseUrl}`
           )}

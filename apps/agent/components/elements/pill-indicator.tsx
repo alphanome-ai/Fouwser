@@ -21,8 +21,8 @@ export const PillIndicator: FC<PillIndicatorProps> = ({
       )}
     >
       <span className="relative flex h-2 w-2">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--accent-orange)] opacity-75"></span>
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--accent-orange)]"></span>
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
       </span>
       {text}
     </div>

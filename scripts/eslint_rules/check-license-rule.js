@@ -7,7 +7,7 @@ const currentYear = new Date().getFullYear()
 const licenseHeader = `
 /**
  * @license
- * Copyright ${currentYear} BrowserOS
+ * Copyright ${currentYear} Fouwser
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 `

@@ -67,14 +67,14 @@ export const BentoCard: FC<BentoCardProps> = ({ feature, mounted, index }) => {
             {/* Header */}
             <div className="flex items-start justify-between">
               <div className="space-y-2">
-                <span className="inline-block rounded-md bg-[var(--accent-orange)]/10 px-2.5 py-0.5 font-semibold text-[var(--accent-orange)] text-xs">
+                <span className="inline-block rounded-md bg-primary/10 px-2.5 py-0.5 font-semibold text-[var(--accent-orange)] text-xs">
                   {feature.tag}
                 </span>
                 <h3 className="font-bold text-xl transition-colors group-hover:text-[var(--accent-orange)]">
                   {feature.title}
                 </h3>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-orange)]/10 transition-all group-hover:scale-110 group-hover:bg-[var(--accent-orange)]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 transition-all group-hover:scale-110 group-hover:bg-primary">
                 <Icon className="h-5 w-5 text-[var(--accent-orange)] transition-colors group-hover:text-white" />
               </div>
             </div>
@@ -123,7 +123,7 @@ export const BentoCard: FC<BentoCardProps> = ({ feature, mounted, index }) => {
             <div className="bg-muted p-8 pb-6">
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <span className="inline-block rounded-md bg-[var(--accent-orange)]/10 px-2.5 py-0.5 font-semibold text-[var(--accent-orange)] text-xs">
+                  <span className="inline-block rounded-md bg-primary/10 px-2.5 py-0.5 font-semibold text-[var(--accent-orange)] text-xs">
                     {feature.tag}
                   </span>
                   <h2 className="font-bold text-2xl">{feature.title}</h2>

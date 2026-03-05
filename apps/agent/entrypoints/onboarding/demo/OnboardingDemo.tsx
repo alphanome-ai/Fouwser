@@ -266,14 +266,14 @@ export const OnboardingDemo = () => {
     <div className="flex h-screen flex-col items-center justify-center bg-background px-6">
       <div className="w-full max-w-lg space-y-8">
         <div className="space-y-2 text-center">
-          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-[var(--accent-orange)]/10">
+          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10">
             <Sparkles className="size-6 text-[var(--accent-orange)]" />
           </div>
           <h2 className="font-bold text-3xl tracking-tight">
             Try your first task
           </h2>
           <p className="text-base text-muted-foreground">
-            Pick a suggestion or type your own to see BrowserOS in action
+            Pick a suggestion or type your own to see Fouwser in action
           </p>
         </div>
 
@@ -315,7 +315,7 @@ export const OnboardingDemo = () => {
           <Button
             type="submit"
             disabled={!customQuery.trim()}
-            className="bg-[var(--accent-orange)] text-white hover:bg-[var(--accent-orange)]/90"
+            className="bg-primary text-white hover:bg-primary/90"
           >
             Go
           </Button>

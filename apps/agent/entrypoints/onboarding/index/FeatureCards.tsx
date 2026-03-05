@@ -25,7 +25,7 @@ export const FeatureCards: FC<FeatureCardsProps> = ({
       </div>
       <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-accent/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
       <div className="relative space-y-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent transition-all duration-300 group-hover:scale-110 group-hover:bg-[var(--accent-orange)]">
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent transition-all duration-300 group-hover:scale-110 group-hover:bg-primary">
           {icon}
         </div>
         <div className="space-y-2">

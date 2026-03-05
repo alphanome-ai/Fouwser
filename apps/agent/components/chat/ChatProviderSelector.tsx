@@ -54,7 +54,7 @@ export const ChatProviderSelector: FC<
                     }}
                     className={cn(
                       'flex w-full items-center gap-3 rounded-md p-2 transition-colors',
-                      isSelected && 'bg-[var(--accent-orange)]/10',
+                      isSelected && 'bg-primary/10',
                     )}
                   >
                     <span className="text-muted-foreground">

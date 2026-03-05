@@ -28,7 +28,7 @@ export const ShortcutsDialog = ({
             Keyboard Shortcuts
           </DialogTitle>
           <DialogDescription>
-            Use these shortcuts to navigate BrowserOS faster
+            Use these shortcuts to navigate Fouwser faster
           </DialogDescription>
         </DialogHeader>
 

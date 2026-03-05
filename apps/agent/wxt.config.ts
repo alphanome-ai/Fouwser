@@ -50,7 +50,7 @@ export default defineConfig({
         48: 'icon/48.png',
         128: 'icon/128.png',
       },
-      default_title: 'Ask BrowserOS',
+      default_title: 'Ask Fouwser',
     },
     permissions: [
       'topSites',

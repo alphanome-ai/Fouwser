@@ -284,7 +284,7 @@ export const StepOne = ({ direction, onContinue }: StepOneProps) => {
 
               <Button
                 type="submit"
-                className="w-full bg-[var(--accent-orange)] text-white hover:bg-[var(--accent-orange)]/90"
+                className="w-full bg-primary text-white hover:bg-primary/90"
               >
                 Continue
               </Button>

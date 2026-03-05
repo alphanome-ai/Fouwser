@@ -454,7 +454,7 @@ export const GraphCanvas: FC<GraphCanvasProps> = ({
                   size="sm"
                   onClick={onClickSave}
                   disabled={!canSave}
-                  className="bg-[var(--accent-orange)] shadow-lg shadow-orange-500/20 hover:bg-[var(--accent-orange-bright)] disabled:bg-[var(--accent-orange)]/50"
+                  className="bg-primary shadow-lg shadow-orange-500/20 hover:bg-[var(--accent-orange-bright)] disabled:bg-primary/50"
                 >
                   <Save className="mr-1.5 h-4 w-4" />
                   {getSaveButtonLabel()}

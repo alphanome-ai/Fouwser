@@ -1,14 +1,13 @@
 import {
   ArrowLeft,
   Bot,
-  Compass,
-  GitBranch,
+  // Compass,
   Info,
-  MessageSquare,
+  // MessageSquare,
   Palette,
   RotateCcw,
-  Search,
-  Server,
+  // Server,
+  Sparkles,
 } from 'lucide-react'
 import type { FC } from 'react'
 import { NavLink } from 'react-router'
@@ -23,75 +22,18 @@ type BaseNavItem = {
   feature?: Feature
 }
 
-type InternalNavItem = BaseNavItem & {
-  href?: never
-  to: string
-}
-
-type ExternalNavItem = BaseNavItem & {
-  href: string
-  to?: never
-}
-
-type NavItem = InternalNavItem | ExternalNavItem
-
-type NavSection = {
-  label: string
-  items: NavItem[]
-}
-
-function isExternalNavItem(item: NavItem): item is ExternalNavItem {
-  return 'href' in item
-}
-
-const getNavLinkClassName = (isActive: boolean) =>
-  cn(
-    'flex h-9 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md px-3 font-medium text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-    isActive && 'bg-sidebar-accent text-sidebar-accent-foreground',
-  )
-
-const getSectionClassName = (index: number) =>
-  cn(index > 0 && 'mt-3 border-t pt-3')
-
-const sectionLabelClassName =
-  'mb-2 px-3 font-semibold text-[10px] text-muted-foreground uppercase tracking-[0.18em]'
-
-const primarySettingsSections: NavSection[] = [
+const settingsNavItems: NavItem[] = [
+  { name: 'Fouwser AI', to: '/settings/ai', icon: Bot },
+  // { name: 'LLM Chat & Hub', to: '/settings/chat', icon: MessageSquare },
+  // { name: 'Fouwser as MCP', to: '/settings/mcp', icon: Server },
   {
-    label: 'Provider Settings',
-    items: [
-      { name: 'BrowserOS AI', to: '/settings/ai', icon: Bot },
-      {
-        name: 'Chat & Council Provider',
-        to: '/settings/chat',
-        icon: MessageSquare,
-      },
-      { name: 'Search Provider', to: '/settings/search', icon: Search },
-    ],
+    name: 'Customization',
+    to: '/settings/customization',
+    icon: Palette,
+    feature: Feature.CUSTOMIZATION_SUPPORT,
   },
-  {
-    label: 'Other',
-    items: [
-      {
-        name: 'Customize BrowserOS',
-        to: '/settings/customization',
-        icon: Palette,
-        feature: Feature.CUSTOMIZATION_SUPPORT,
-      },
-      { name: 'BrowserOS as MCP', to: '/settings/mcp', icon: Server },
-      {
-        name: 'Workflows',
-        to: '/workflows',
-        icon: GitBranch,
-        feature: Feature.WORKFLOW_SUPPORT,
-      },
-    ],
-  },
-]
-
-const helpItems: NavItem[] = [
-  { name: 'Docs', href: 'https://docs.browseros.com/', icon: Info },
-  { name: 'Features', to: '/onboarding/features', icon: Compass },
+  { name: 'Agent Soul', to: '/settings/soul', icon: Sparkles },
+  // { name: 'Explore Features', to: '/onboarding/features', icon: Compass },
   { name: 'Revisit Onboarding', to: '/onboarding', icon: RotateCcw },
 ]
 
@@ -169,13 +111,39 @@ export const SettingsSidebar: FC = () => {
         <div className="mb-2 px-3 font-semibold text-muted-foreground text-xs uppercase tracking-wider">
           Settings
         </div>
-        <div>{filteredSections.map(renderSection)}</div>
-        <div className="mt-auto pt-4">
-          <div className={sectionLabelClassName}>Help</div>
-          <nav className="space-y-1">
-            {filteredHelpItems.map(renderNavItem)}
-          </nav>
-        </div>
+        <nav className="space-y-1">
+          {filteredItems.map((item) => {
+            const Icon = item.icon
+            const isActive = location.pathname === item.to
+
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={cn(
+                  'flex h-9 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md px-3 font-medium text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                  isActive &&
+                    'bg-sidebar-accent text-sidebar-accent-foreground',
+                )}
+              >
+                <Icon className="size-4 shrink-0" />
+                <span className="truncate">{item.name}</span>
+              </NavLink>
+            )
+          })}
+        </nav>
+      </div>
+
+      <div className="mt-auto border-t p-2">
+        <a
+          href="https://yourlogin.page/wIzyIs-fouwser-iv"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex h-9 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md px-3 font-medium text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <Info className="size-4 shrink-0" />
+          <span className="truncate">About Fouwser</span>
+        </a>
       </div>
     </div>
   )
