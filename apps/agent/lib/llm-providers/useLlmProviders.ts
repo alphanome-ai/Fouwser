@@ -1,12 +1,31 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   createDefaultProvidersConfig,
+  DEFAULT_PROVIDER_FALLBACK_ID,
   DEFAULT_PROVIDER_ID,
   defaultProviderIdStorage,
+  ENABLE_DEFAULT_FREE_PROVIDER,
   loadProviders,
   providersStorage,
 } from './storage'
 import type { LlmProviderConfig } from './types'
+
+function sanitizeProviders(list: LlmProviderConfig[]): LlmProviderConfig[] {
+  if (ENABLE_DEFAULT_FREE_PROVIDER) return list
+  return list.filter((provider) => {
+    const providerType = String(provider.type).toLowerCase()
+    return (
+      provider.id !== DEFAULT_PROVIDER_ID &&
+      provider.id !== 'browseros' &&
+      providerType !== 'fouwser' &&
+      providerType !== 'browseros' &&
+      !(
+        provider.baseUrl === 'https://api.fouwser.com/v1' &&
+        provider.modelId === 'fouwser-auto'
+      )
+    )
+  })
+}
 
 /**
  * Hook return type
@@ -35,8 +54,9 @@ export interface UseLlmProvidersReturn {
  */
 export function useLlmProviders(): UseLlmProvidersReturn {
   const [providers, setProviders] = useState<LlmProviderConfig[]>([])
-  const [defaultProviderId, setDefaultProviderId] =
-    useState<string>(DEFAULT_PROVIDER_ID)
+  const [defaultProviderId, setDefaultProviderId] = useState<string>(
+    DEFAULT_PROVIDER_FALLBACK_ID,
+  )
   const [isLoading, setIsLoading] = useState(true)
 
   // Load initial data
@@ -49,14 +69,28 @@ export function useLlmProviders(): UseLlmProvidersReturn {
           defaultProviderIdStorage.getValue(),
         ])
 
+        // When the built-in free provider is disabled, remove any persisted copy
+        // from older installs so it disappears from selectors.
+        if (loadedProviders?.length) {
+          const filteredProviders = sanitizeProviders(loadedProviders)
+          if (filteredProviders.length !== loadedProviders.length) {
+            loadedProviders = filteredProviders
+            await providersStorage.setValue(filteredProviders)
+          }
+        }
+
         // Initialize with defaults if storage is empty
         if (!loadedProviders || loadedProviders.length === 0) {
           loadedProviders = createDefaultProvidersConfig()
           await providersStorage.setValue(loadedProviders)
         }
 
-        if (!loadedDefaultId) {
-          loadedDefaultId = DEFAULT_PROVIDER_ID
+        const hasSelectedDefault =
+          !!loadedDefaultId &&
+          loadedProviders.some((provider) => provider.id === loadedDefaultId)
+        if (!hasSelectedDefault) {
+          loadedDefaultId =
+            loadedProviders[0]?.id || DEFAULT_PROVIDER_FALLBACK_ID
           await defaultProviderIdStorage.setValue(loadedDefaultId)
         }
 
@@ -76,13 +110,13 @@ export function useLlmProviders(): UseLlmProvidersReturn {
   useEffect(() => {
     const unsubscribeProviders = providersStorage.watch((newProviders) => {
       if (newProviders) {
-        setProviders(newProviders)
+        setProviders(sanitizeProviders(newProviders))
       }
     })
 
     const unsubscribeDefaultId = defaultProviderIdStorage.watch(
       (newDefaultId) => {
-        if (newDefaultId) {
+        if (typeof newDefaultId === 'string') {
           setDefaultProviderId(newDefaultId)
         }
       },
@@ -130,7 +164,7 @@ export function useLlmProviders(): UseLlmProvidersReturn {
 
   const deleteProvider = async (providerId: string) => {
     // Prevent deletion of built-in BrowserOS provider
-    if (providerId === DEFAULT_PROVIDER_ID) {
+    if (ENABLE_DEFAULT_FREE_PROVIDER && providerId === DEFAULT_PROVIDER_ID) {
       return
     }
 
@@ -139,7 +173,8 @@ export function useLlmProviders(): UseLlmProvidersReturn {
 
     // Handle default provider reassignment if deleted provider was default
     if (defaultProviderId === providerId) {
-      const newDefaultId = updatedProviders[0]?.id || DEFAULT_PROVIDER_ID
+      const newDefaultId =
+        updatedProviders[0]?.id || DEFAULT_PROVIDER_FALLBACK_ID
       await defaultProviderIdStorage.setValue(newDefaultId)
     }
 

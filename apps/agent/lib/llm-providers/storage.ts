@@ -8,6 +8,12 @@ import { uploadLlmProvidersToGraphql } from './uploadLlmProvidersToGraphql'
 
 /** Default provider ID constant */
 export const DEFAULT_PROVIDER_ID = 'fouwser'
+/** Toggle seeding of built-in hosted provider in empty storage. */
+export const ENABLE_DEFAULT_FREE_PROVIDER = false
+/** Fallback default provider ID for storage. */
+export const DEFAULT_PROVIDER_FALLBACK_ID = ENABLE_DEFAULT_FREE_PROVIDER
+  ? DEFAULT_PROVIDER_ID
+  : ''
 const DEFAULT_PROVIDER_NAME = 'Fouwser'
 const KIMI_LAUNCH_PROVIDER_NAME = '' // Kimi K2.5
 
@@ -122,7 +128,9 @@ export function createDefaultBrowserOSProvider(): LlmProviderConfig {
 
 /** Creates the default providers configuration. Only call when storage is empty. */
 export function createDefaultProvidersConfig(): LlmProviderConfig[] {
-  return [createDefaultBrowserOSProvider()]
+  // Disabled for now: do not auto-seed the hosted free provider.
+  // return [createDefaultBrowserOSProvider()]
+  return []
 }
 
 function getBuiltInProviderName(): string {
@@ -155,6 +163,6 @@ function normalizeProvidersForLaunch(
 export const defaultProviderIdStorage = storage.defineItem<string>(
   'local:default-provider-id',
   {
-    fallback: DEFAULT_PROVIDER_ID,
+    fallback: DEFAULT_PROVIDER_FALLBACK_ID,
   },
 )

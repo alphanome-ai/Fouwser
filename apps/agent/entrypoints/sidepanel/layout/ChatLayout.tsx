@@ -1,5 +1,6 @@
 import type { FC } from 'react'
 import { Outlet } from 'react-router'
+import { Button } from '@/components/ui/button'
 import { ChatHeader } from '../index/ChatHeader'
 import {
   ChatSessionProvider,
@@ -16,10 +17,37 @@ const ChatLayoutContent: FC = () => {
     isLoading,
   } = useChatSessionContext()
 
-  if (isLoading || !selectedProvider) {
+  if (isLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (!selectedProvider || providers.length === 0) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background px-6">
+        <div className="w-full max-w-sm rounded-xl border bg-card p-6 text-center">
+          <h2 className="font-semibold text-base text-foreground">
+            No LLM provider configured
+          </h2>
+          <p className="mt-2 text-muted-foreground text-sm">
+            Set up a provider in Agent settings to start using chat.
+          </p>
+          <Button
+            className="mt-4 w-full"
+            onClick={() => {
+              window.open(
+                '/app.html#/settings/ai',
+                '_blank',
+                'noopener,noreferrer',
+              )
+            }}
+          >
+            Set up LLM provider
+          </Button>
+        </div>
       </div>
     )
   }
