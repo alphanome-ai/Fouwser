@@ -1,7 +1,7 @@
 import type { FC } from 'react'
 import { SoulExamples } from './SoulExamples'
 import { SoulHeader } from './SoulHeader'
-import { SoulInspiration } from './SoulInspiration'
+// import { SoulInspiration } from './SoulInspiration'
 import { SoulViewer } from './SoulViewer'
 
 export const SoulPage: FC = () => {
@@ -10,7 +10,7 @@ export const SoulPage: FC = () => {
       <SoulHeader />
       <SoulViewer />
       <SoulExamples />
-      <SoulInspiration />
+      {/* <SoulInspiration /> */}
     </div>
   )
 }
