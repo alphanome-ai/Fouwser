@@ -154,7 +154,7 @@ class BuildConfig:
         # App names - will be set based on platform
         self.CHROMIUM_APP_NAME = ""
         self.BROWSEROS_APP_NAME = ""
-        self.BROWSEROS_APP_BASE_NAME = "BrowserOS"
+        self.BROWSEROS_APP_BASE_NAME = "Fouwser"
 
         # Third party versions
         self.SPARKLE_VERSION = "2.7.0"
