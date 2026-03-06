@@ -82,12 +82,8 @@ export const ChatFooter: FC<ChatFooterProps> = ({
       <ChatAttachedTabs tabs={attachedTabs} onRemoveTab={onRemoveTab} />
 
       <div className="p-3">
-        <div className="flex items-center gap-2">
-          <ChatModeToggle mode={mode} onModeChange={onModeChange} />
-
-          <div className="h-4 w-px bg-border/50" />
-
-          <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="order-1 ml-auto flex items-center gap-1 sm:order-2 sm:ml-0">
             <button
               type="button"
               onClick={() => chatInputRef.current?.toggleTabMention()}
@@ -169,6 +165,10 @@ export const ChatFooter: FC<ChatFooterProps> = ({
                 </button>
               </AppSelector>
             )}
+          </div>
+
+          <div className="order-2 min-w-0 basis-full sm:order-1 sm:flex-1 sm:basis-auto">
+            <ChatModeToggle mode={mode} onModeChange={onModeChange} />
           </div>
         </div>
 

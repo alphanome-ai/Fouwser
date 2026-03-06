@@ -1,4 +1,4 @@
-import { MessageSquare, MousePointer2 } from 'lucide-react'
+import { Braces, MessageSquare, MousePointer2 } from 'lucide-react'
 import type { FC } from 'react'
 import {
   Tooltip,
@@ -18,39 +18,65 @@ export const ChatModeToggle: FC<ChatModeToggleProps> = ({
   mode,
   onModeChange,
 }) => {
-  const isAgentMode = mode === 'agent'
+  const modeMeta: Record<
+    ChatMode,
+    {
+      label: string
+      description: string
+      icon: typeof MessageSquare
+    }
+  > = {
+    chat: {
+      label: 'Chat',
+      description: 'Read-only Q&A about page and context',
+      icon: MessageSquare,
+    },
+    agent: {
+      label: 'Agent',
+      description: 'Can browse, click, and automate browser tasks',
+      icon: MousePointer2,
+    },
+    coding: {
+      label: 'Coding',
+      description: 'Uses local filesystem tools for coding tasks',
+      icon: Braces,
+    },
+  }
+
+  const tooltip = modeMeta[mode]
 
   return (
     <TooltipProvider delayDuration={0}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={() => onModeChange(isAgentMode ? 'chat' : 'agent')}
-            className={cn(
-              'flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 font-medium text-xs transition-all',
-              isAgentMode
-                ? 'border-border/50 bg-muted text-muted-foreground hover:text-foreground'
-                : 'border-[var(--accent-orange)]/30 bg-primary/10 text-[var(--accent-orange)]',
-            )}
-          >
-            {isAgentMode ? (
-              <>
-                <MousePointer2 className="h-3 w-3" />
-                <span>Agent Mode ON</span>
-              </>
-            ) : (
-              <>
-                <MessageSquare className="h-3 w-3" />
-                <span>Chat Mode ON</span>
-              </>
-            )}
-          </button>
+          <div className="inline-flex w-full items-center rounded-full border border-border/60 bg-muted/40 p-0.5">
+            {(Object.keys(modeMeta) as ChatMode[]).map((modeKey) => {
+              const isActive = modeKey === mode
+              const Icon = modeMeta[modeKey].icon
+
+              return (
+                <button
+                  key={modeKey}
+                  type="button"
+                  onClick={() => onModeChange(modeKey)}
+                  className={cn(
+                    'flex min-w-0 flex-1 items-center justify-center gap-1 rounded-full px-2 py-1 text-xs transition-all min-[440px]:gap-1.5 min-[440px]:px-2.5',
+                    isActive
+                      ? 'bg-primary/15 font-semibold text-[var(--accent-orange)]'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  <Icon className="h-3 w-3" />
+                  <span className="hidden min-[380px]:inline">
+                    {modeMeta[modeKey].label}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-[220px]">
-          {isAgentMode
-            ? 'AI can browse, click, and navigate'
-            : 'AI can only read, cannot click or navigate'}
+          {tooltip.description}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
