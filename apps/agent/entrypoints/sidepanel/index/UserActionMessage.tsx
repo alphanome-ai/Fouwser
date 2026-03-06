@@ -1,4 +1,4 @@
-import { Bot, FileText, Globe, Sparkles } from 'lucide-react'
+import { Bot, Braces, FileText, Globe, Sparkles } from 'lucide-react'
 import type { FC } from 'react'
 import type {
   AITabAction,
@@ -64,22 +64,24 @@ const AITabActionCard: FC<{ action: AITabAction }> = ({ action }) => {
 }
 
 const BrowserOSActionCard: FC<{ action: BrowserOSAction }> = ({ action }) => {
-  const isAgent = action.mode === 'agent'
+  const modeMeta = {
+    chat: { label: 'Chat', icon: Sparkles },
+    agent: { label: 'Agent', icon: Bot },
+    coding: { label: 'Coding', icon: Braces },
+  } as const
+  const meta = modeMeta[action.mode]
+  const ModeIcon = meta.icon
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-start gap-2">
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
-          {isAgent ? (
-            <Bot className="h-4 w-4 text-[var(--accent-orange)]" />
-          ) : (
-            <Sparkles className="h-4 w-4 text-[var(--accent-orange)]" />
-          )}
+          <ModeIcon className="h-4 w-4 text-[var(--accent-orange)]" />
         </div>
         <div className="flex-1">
           <div className="mb-0.5 flex items-center gap-1.5">
             <span className="rounded bg-primary/10 px-1.5 py-0.5 font-medium text-[10px] text-[var(--accent-orange)] uppercase">
-              {isAgent ? 'Agent' : 'Chat'}
+              {meta.label}
             </span>
           </div>
           <div className="text-foreground text-sm">{action.message}</div>

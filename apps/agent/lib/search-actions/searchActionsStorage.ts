@@ -6,7 +6,7 @@ import type { ChatAction } from '@/lib/chat-actions/types'
  */
 export interface SearchActionStorage {
   query: string
-  mode: 'chat' | 'agent'
+  mode: 'chat' | 'agent' | 'coding'
   action?: ChatAction
 }
 

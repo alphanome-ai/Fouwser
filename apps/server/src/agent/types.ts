@@ -39,6 +39,8 @@ export interface ResolvedAgentConfig {
   evalMode?: boolean
   /** Chat mode - restricts to read-only tools (no browser automation). Defaults to false. */
   chatMode?: boolean
+  /** Coding mode - local code workflow with filesystem tools only. Defaults to false. */
+  codingMode?: boolean
   /** Scheduled task mode - disables tab grouping. Defaults to false. */
   isScheduledTask?: boolean
   /** Apps the user previously declined to connect via MCP (chose "do it manually"). */

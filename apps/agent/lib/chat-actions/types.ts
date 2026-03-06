@@ -24,7 +24,7 @@ export interface AITabAction extends BaseChatAction {
  */
 export interface BrowserOSAction extends BaseChatAction {
   type: 'browseros'
-  mode: 'chat' | 'agent'
+  mode: 'chat' | 'agent' | 'coding'
   message: string
   tabs?: chrome.tabs.Tab[]
 }
@@ -41,7 +41,7 @@ export type ChatAction = AITabAction | BrowserOSAction
  */
 export interface SearchActionData {
   query: string
-  mode: 'chat' | 'agent'
+  mode: 'chat' | 'agent' | 'coding'
   action?: ChatAction
 }
 
@@ -67,7 +67,7 @@ export const createAITabAction = (params: {
  * @public
  */
 export const createBrowserOSAction = (params: {
-  mode: 'chat' | 'agent'
+  mode: 'chat' | 'agent' | 'coding'
   message: string
   tabs?: chrome.tabs.Tab[]
 }): BrowserOSAction => ({

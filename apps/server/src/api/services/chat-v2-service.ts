@@ -4,31 +4,31 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { mkdir, utimes } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { createAgentUIStreamResponse, type UIMessage } from 'ai'
-import { AiSdkAgent } from '../../agent/ai-sdk-agent'
-import { formatUserMessage } from '../../agent/format-message'
-import type { SessionStore } from '../../agent/session-store'
+import { AiSdkAgent } from '../../agent/tool-loop/ai-sdk-agent'
+import { formatUserMessage } from '../../agent/tool-loop/format-message'
+import type { SessionStore } from '../../agent/tool-loop/session-store'
 import type { ResolvedAgentConfig } from '../../agent/types'
 import type { Browser } from '../../browser/browser'
-import { getSessionsDir } from '../../lib/browseros-dir'
 import type { KlavisClient } from '../../lib/clients/klavis/klavis-client'
 import { resolveLLMConfig } from '../../lib/clients/llm/config'
 import { logger } from '../../lib/logger'
 import type { ToolRegistry } from '../../tools/tool-registry'
 import type { BrowserContext, ChatRequest } from '../types'
 
-export interface ChatServiceDeps {
+export interface ChatV2ServiceDeps {
   sessionStore: SessionStore
   klavisClient: KlavisClient
+  executionDir: string
   browser: Browser
   registry: ToolRegistry
   browserosId?: string
 }
 
-export class ChatService {
-  constructor(private deps: ChatServiceDeps) {}
+export class ChatV2Service {
+  constructor(private deps: ChatV2ServiceDeps) {}
 
   async processMessage(
     request: ChatRequest,
@@ -38,7 +38,7 @@ export class ChatService {
 
     const llmConfig = await resolveLLMConfig(request, this.deps.browserosId)
 
-    const workingDir = await this.resolveSessionDir(request)
+    const sessionExecutionDir = await this.resolveSessionDir(request)
 
     const agentConfig: ResolvedAgentConfig = {
       conversationId: request.conversationId,
@@ -54,44 +54,15 @@ export class ChatService {
       sessionToken: llmConfig.sessionToken,
       contextWindowSize: request.contextWindowSize,
       userSystemPrompt: request.userSystemPrompt,
-      workingDir,
+      sessionExecutionDir,
       supportsImages: request.supportsImages,
       chatMode: request.mode === 'chat',
       codingMode: request.mode === 'coding',
       isScheduledTask: request.isScheduledTask,
-      declinedApps: request.declinedApps,
     }
 
     let session = sessionStore.get(request.conversationId)
     let isNewSession = false
-
-    // Build a stable key from enabled MCP servers for change detection
-    const mcpServerKey = this.buildMcpServerKey(request.browserContext)
-
-    // Detect MCP config change mid-conversation → rebuild session
-    if (session && session.mcpServerKey !== mcpServerKey) {
-      logger.info('MCP servers changed mid-conversation, rebuilding session', {
-        conversationId: request.conversationId,
-        previous: session.mcpServerKey,
-        current: mcpServerKey,
-      })
-      const previousMessages = session.agent.messages
-      await session.agent.dispose()
-      sessionStore.remove(request.conversationId)
-
-      const browserContext = await this.resolvePageIds(request.browserContext)
-      const agent = await AiSdkAgent.create({
-        resolvedConfig: agentConfig,
-        browser: this.deps.browser,
-        registry: this.deps.registry,
-        browserContext,
-        klavisClient: this.deps.klavisClient,
-        browserosId: this.deps.browserosId,
-      })
-      session = { agent, browserContext, mcpServerKey }
-      session.agent.messages = previousMessages
-      sessionStore.set(request.conversationId, session)
-    }
 
     if (!session) {
       isNewSession = true
@@ -134,7 +105,7 @@ export class ChatService {
         klavisClient: this.deps.klavisClient,
         browserosId: this.deps.browserosId,
       })
-      session = { agent, hiddenWindowId, browserContext, mcpServerKey }
+      session = { agent, hiddenWindowId, browserContext }
       sessionStore.set(request.conversationId, session)
     }
 
@@ -252,22 +223,11 @@ export class ChatService {
     })
   }
 
-  private buildMcpServerKey(browserContext?: BrowserContext): string {
-    const managed = browserContext?.enabledMcpServers?.slice().sort() ?? []
-    const custom =
-      browserContext?.customMcpServers?.map((s) => s.url).sort() ?? []
-    return [...managed, ...custom].join(',')
-  }
-
   private async resolveSessionDir(request: ChatRequest): Promise<string> {
     const dir = request.userWorkingDir
       ? request.userWorkingDir
-      : path.join(getSessionsDir(), request.conversationId)
+      : path.join(this.deps.executionDir, 'sessions', request.conversationId)
     await mkdir(dir, { recursive: true })
-    if (!request.userWorkingDir) {
-      const now = new Date()
-      await utimes(dir, now, now).catch(() => {})
-    }
     return dir
   }
 }

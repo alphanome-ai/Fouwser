@@ -37,7 +37,7 @@ export interface AITabSuggestionItem extends BaseSuggestionItem {
  */
 export interface BrowserOSSuggestionItem extends BaseSuggestionItem {
   type: 'browseros'
-  mode: 'chat' | 'agent'
+  mode: 'chat' | 'agent' | 'coding'
   message: string
 }
 

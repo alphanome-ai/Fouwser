@@ -2,7 +2,7 @@
  * @public
  */
 export interface BrowserOSSuggestion {
-  mode: 'chat' | 'agent'
+  mode: 'chat' | 'agent' | 'coding'
   message: string
 }
 

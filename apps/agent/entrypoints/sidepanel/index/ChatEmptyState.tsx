@@ -1,7 +1,12 @@
 import { Sparkles } from 'lucide-react'
 import type { FC } from 'react'
 import { cn } from '@/lib/utils'
-import { AGENT_SUGGESTIONS, CHAT_SUGGESTIONS, type ChatMode } from './chatTypes'
+import {
+  AGENT_SUGGESTIONS,
+  CHAT_SUGGESTIONS,
+  type ChatMode,
+  CODING_SUGGESTIONS,
+} from './chatTypes'
 
 interface ChatEmptyStateProps {
   mode: ChatMode
@@ -14,7 +19,22 @@ export const ChatEmptyState: FC<ChatEmptyStateProps> = ({
   mounted,
   onSuggestionClick,
 }) => {
-  const suggestions = mode === 'chat' ? CHAT_SUGGESTIONS : AGENT_SUGGESTIONS
+  const suggestionsByMode = {
+    chat: CHAT_SUGGESTIONS,
+    agent: AGENT_SUGGESTIONS,
+    coding: CODING_SUGGESTIONS,
+  } as const
+  const titleByMode = {
+    chat: 'Chat with this page',
+    agent: 'Agent at your service',
+    coding: 'Coding Agent',
+  } as const
+  const descriptionByMode = {
+    chat: 'Ask questions about the current page or any topic',
+    agent: 'Let AI automate tasks and browse for you',
+    coding: 'Develop your ideas locally',
+  } as const
+  const suggestions = suggestionsByMode[mode]
 
   return (
     <div
@@ -27,13 +47,9 @@ export const ChatEmptyState: FC<ChatEmptyStateProps> = ({
         <Sparkles className="h-7 w-7 text-[var(--accent-orange)]" />
       </div>
       <div>
-        <h2 className="mb-1 font-semibold text-lg">
-          {mode === 'chat' ? 'Chat with this page' : 'Agent at your service'}
-        </h2>
+        <h2 className="mb-1 font-semibold text-lg">{titleByMode[mode]}</h2>
         <p className="max-w-[200px] text-muted-foreground text-xs">
-          {mode === 'chat'
-            ? 'Ask questions about the current page or any topic'
-            : 'Let AI automate tasks and browse for you'}
+          {descriptionByMode[mode]}
         </p>
       </div>
 

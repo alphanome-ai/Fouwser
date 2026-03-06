@@ -282,7 +282,11 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
           onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={
-            mode === 'chat' ? 'Ask about this page...' : 'What should I do?'
+            mode === 'chat'
+              ? 'Ask about this page...'
+              : mode === 'coding'
+                ? 'Ask me to inspect, edit, or debug code...'
+                : 'What should I do?'
           }
           rows={1}
         />

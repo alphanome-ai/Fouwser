@@ -221,7 +221,7 @@ export const OnboardingDemo = () => {
 
   const handleDemoTask = async (
     query: string,
-    mode: 'chat' | 'agent',
+    mode: 'chat' | 'agent' | 'coding',
     index: number,
   ) => {
     track(ONBOARDING_DEMO_TRIGGERED_EVENT, {
