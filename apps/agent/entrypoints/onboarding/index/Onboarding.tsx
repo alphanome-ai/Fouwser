@@ -44,7 +44,7 @@ export const Onboarding: FC = () => {
             <p
               className={`mx-auto max-w-2xl text-pretty text-muted-foreground text-xl leading-relaxed transition-all delay-300 duration-700 md:text-2xl ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
             >
-              The Browser build for Founders. The Browser build for You!
+              The Browser built for Founders. The Browser built for You!
             </p>
 
             <div
