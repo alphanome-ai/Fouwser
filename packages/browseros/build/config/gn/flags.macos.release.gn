@@ -6,7 +6,7 @@ symbol_level=0
 is_clang=true
 chrome_pgo_phase = 0
 dcheck_always_on=false
-enable_sparkle=false
+enable_sparkle=true
 
 # new macOS build flags
 use_system_xcode = true
