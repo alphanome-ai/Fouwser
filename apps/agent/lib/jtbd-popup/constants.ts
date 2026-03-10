@@ -7,3 +7,6 @@ export const JTBD_POPUP_CONSTANTS = {
   // Show "don't show again" checkbox after popup has been shown this many times
   DONT_SHOW_AGAIN_AFTER: 2,
 } as const
+
+// Global kill-switch for the JTBD popup.
+export const JTBD_POPUP_ENABLED = false
