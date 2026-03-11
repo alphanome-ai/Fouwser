@@ -14,7 +14,7 @@ index 92a45baf84050..ee66fa7b857a7 100644
    if (first_run::IsChromeFirstRun()) {
      if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kApp) &&
          !base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kAppId)) {
-+      browser_creator_->AddFirstRunTabs({GURL("chrome://browseros-welcome")});
++      browser_creator_->AddFirstRunTabs({GURL("chrome://fouwser-welcome")});
        browser_creator_->AddFirstRunTabs(master_prefs_->new_tabs);
      }
    }

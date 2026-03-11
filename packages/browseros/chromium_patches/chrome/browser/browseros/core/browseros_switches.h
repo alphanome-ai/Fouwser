@@ -85,7 +85,7 @@ index 0000000000000..8d6fcc30fd568
 +// === Misc Switches ===
 +
 +// Indicates this is the first run of BrowserOS.
-+inline constexpr char kFirstRun[] = "browseros-welcome";
++inline constexpr char kFirstRun[] = "fouwser-welcome";
 +
 +}  // namespace browseros
 +

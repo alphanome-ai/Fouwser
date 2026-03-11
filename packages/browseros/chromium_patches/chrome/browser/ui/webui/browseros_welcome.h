@@ -31,7 +31,7 @@ index 0000000000000..89503c57538ad
 +};
 +
 +std::string BrowserOSWelcomeDataSource::GetSource() {
-+  return "browseros-welcome";
++  return "fouwser-welcome";
 +}
 +
 +std::string BrowserOSWelcomeDataSource::GetMimeType(const GURL& url) {
