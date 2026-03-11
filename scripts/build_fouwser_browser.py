@@ -29,7 +29,7 @@ from dotenv import load_dotenv
 ACTIVE_PROCESS: subprocess.Popen | None = None
 INTERRUPT_COUNT = 0
 
-# Ordered logically
+# Ordered
 AVAILABLE_MODULES = {
     "clean": "Clean build artifacts and reset git state",
     "git_setup": "Checkout Chromium version and sync dependencies",
@@ -429,17 +429,13 @@ def build_local_agent_artifacts(
     run(["bun", "run", "build:agent"], cwd=agent_monorepo, env=build_env)
     run(["bun", "run", "build:ext"], cwd=agent_monorepo, env=build_env)
 
-    env_prod = agent_monorepo / "apps/server/.env.production"
-    if server_mode == "prod" and not env_prod.exists():
-        log(
-            "Creating apps/server/.env.production with placeholder values (edit as needed)."
-        )
-        env_prod.write_text(
-            "BROWSEROS_CONFIG_URL=https://llm.fouwser.com/api/browseros-server/config\n"
-            "CODEGEN_SERVICE_URL=https://api.fouwser.com/graphql\nPOSTHOG_API_KEY=placeholder\n"
-            "SENTRY_DSN=placeholder\nSENTRY_AUTH_TOKEN=placeholder\nSENTRY_ORG=placeholder\nSENTRY_PROJECT=placeholder\n",
-            encoding="utf-8",
-        )
+    if server_mode == "prod":
+        server_env_path = agent_monorepo / "apps/server/.env.production"
+    else:
+        server_env_path = agent_monorepo / "apps/server/.env.development"
+    if not server_env_path.exists():
+        die(f"Missing required server env file: {server_env_path}")
+    build_env.update(_parse_env_file(server_env_path))
 
     server_target = f"darwin-{target_arch}"
     server_bin_name = f"browseros-server-{server_target}"
@@ -459,7 +455,7 @@ def build_local_agent_artifacts(
     agent_dist = agent_monorepo / "apps/agent/dist/chrome-mv3"
     controller_dist = agent_monorepo / "apps/controller-ext/dist"
     server_dist = agent_monorepo / "dist/server"
-    server_bundle_js = server_dist / "bundle/index.js"
+    server_bundle_js = server_dist / "sourcemaps/index.js"
 
     require_file(agent_dist / "manifest.json")
     require_file(controller_dist / "manifest.json")
@@ -503,8 +499,8 @@ def build_local_agent_artifacts(
     resources_bun_dir.mkdir(parents=True, exist_ok=True)
 
     shutil.copy2(server_dist / server_bin_name, resources_server_dir / server_bin_name)
-    if server_bundle_js.exists():
-        shutil.copy2(server_bundle_js, resources_server_dir / "index.js")
+    require_file(server_bundle_js)
+    shutil.copy2(server_bundle_js, resources_server_dir / "index.js")
     (resources_server_dir / server_bin_name).chmod(0o755)
 
     bun_path = shutil.which("bun")
@@ -628,7 +624,7 @@ def run_main() -> None:
         key="BUILD_TYPE",
         env_values=dotenv_values,
         prompt="BUILD_TYPE",
-        default="release",
+        default="debug",
         choices={"release", "debug"},
     )
 
@@ -683,20 +679,12 @@ def run_main() -> None:
     if not selected_modules and inject_local_agent == "0":
         die("No modules or injections selected. Aborting build.")
 
-    uv_cache_dir = resolve_config_value(
-        key="UV_CACHE_DIR",
-        env_values=dotenv_values,
-        prompt="\nUV_CACHE_DIR",
-        default="/tmp/uv-cache",
-    )
-
     # Persist resolved values
     os.environ["CHROMIUM_SRC"] = str(chromium_src)
     os.environ["TARGET_ARCH"] = target_arch
     os.environ["TARGET_OS"] = target_os
     os.environ["BUILD_TYPE"] = build_type
     os.environ["MODULES"] = ",".join(selected_modules)
-    os.environ["UV_CACHE_DIR"] = uv_cache_dir
     if inject_local_agent == "1":
         os.environ["SERVER_MODE"] = server_mode
         os.environ["CHROME_PACKER"] = str(chrome_packer)
@@ -731,7 +719,6 @@ def run_main() -> None:
 
     browseros_pkg = root_dir / "packages/browseros"
     uv_env = os.environ.copy()
-    uv_env["UV_CACHE_DIR"] = uv_cache_dir
 
     log("Syncing uv dependencies...")
     run(["uv", "sync"], cwd=browseros_pkg, env=uv_env)
