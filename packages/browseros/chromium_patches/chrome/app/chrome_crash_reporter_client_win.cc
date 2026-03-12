@@ -20,7 +20,7 @@ index ac91059612483..7286dfcca9365 100644
    GetProductNameAndVersion(exe_file, &product_name, &version, &special_build,
                             &channel_name);
 -  product_info->product_name = base::WideToUTF8(product_name);
-+  product_info->product_name = "BrowserOS";
++  product_info->product_name = "Fouwser";
    product_info->version = base::WideToUTF8(version);
    product_info->channel = base::WideToUTF8(channel_name);
  }
