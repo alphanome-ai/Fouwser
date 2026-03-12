@@ -22,7 +22,7 @@
     },
     "apps/agent": {
       "name": "@browseros/agent",
-      "version": "0.0.8",
+      "version": "0.0.10",
       "dependencies": {
         "@ai-sdk/react": "^3.0.96",
         "@browseros/server": "workspace:*",
@@ -145,10 +145,14 @@
     "apps/server": {
       "name": "@browseros/server",
 <<<<<<< HEAD
+<<<<<<< HEAD
       "version": "0.0.1",
 =======
       "version": "0.0.8",
 >>>>>>> 0fa3255e (feat: fouwser agent - controller-server)
+=======
+      "version": "0.0.10",
+>>>>>>> 3b212770 (chore: openi compatible provider in templates)
       "bin": {
         "browseros-server": "./src/index.ts",
       },

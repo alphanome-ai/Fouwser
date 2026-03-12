@@ -25,7 +25,7 @@ export class McpPortError extends Error {
 }
 
 const DEFAULT_PORT_SCAN_START = 9200
-const DEFAULT_PORT_SCAN_ATTEMPTS = 150
+const DEFAULT_PORT_SCAN_ATTEMPTS = 50
 const PORT_SCAN_TIMEOUT_MS = 150
 
 function logResolvedAgentServerUrl(url: string, source: string): void {
