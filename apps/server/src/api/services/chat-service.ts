@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { mkdir, utimes } from 'node:fs/promises'
+import { appendFile, mkdir, utimes } from 'node:fs/promises'
 import path from 'node:path'
 import { createAgentUIStreamResponse, type UIMessage } from 'ai'
 import { AiSdkAgent } from '../../agent/ai-sdk-agent'
@@ -45,6 +45,9 @@ export class ChatService {
     const llmConfig = await resolveLLMConfig(request, this.deps.browserosId)
 
     const workingDir = await this.resolveSessionDir(request)
+    const conversationLogPath = await this.ensureConversationLogPath(
+      request.conversationId,
+    )
 
     const agentConfig: ResolvedAgentConfig = {
       conversationId: request.conversationId,
@@ -82,6 +85,7 @@ export class ChatService {
         current: mcpServerKey,
       })
       const previousMessages = session.agent.messages
+      const previousPersistedMessageCount = session.persistedMessageCount ?? 0
       await session.agent.dispose()
       sessionStore.remove(request.conversationId)
 
@@ -94,7 +98,13 @@ export class ChatService {
         klavisClient: this.deps.klavisClient,
         browserosId: this.deps.browserosId,
       })
-      session = { agent, browserContext, mcpServerKey }
+      session = {
+        agent,
+        browserContext,
+        mcpServerKey,
+        conversationLogPath,
+        persistedMessageCount: previousPersistedMessageCount,
+      }
       session.agent.messages = previousMessages
       sessionStore.set(request.conversationId, session)
     }
@@ -140,7 +150,14 @@ export class ChatService {
         klavisClient: this.deps.klavisClient,
         browserosId: this.deps.browserosId,
       })
-      session = { agent, hiddenWindowId, browserContext, mcpServerKey }
+      session = {
+        agent,
+        hiddenWindowId,
+        browserContext,
+        mcpServerKey,
+        conversationLogPath,
+        persistedMessageCount: 0,
+      }
       sessionStore.set(request.conversationId, session)
     }
 
@@ -179,6 +196,11 @@ export class ChatService {
       abortSignal,
       onFinish: async ({ messages }: { messages: UIMessage[] }) => {
         session.agent.messages = messages
+        await this.persistConversationJsonl(
+          session,
+          request.conversationId,
+          messages,
+        )
         logger.info('Agent execution complete', {
           conversationId: request.conversationId,
           totalMessages: messages.length,
@@ -275,5 +297,51 @@ export class ChatService {
       await utimes(dir, now, now).catch(() => {})
     }
     return dir
+  }
+
+  private async ensureConversationLogPath(
+    conversationId: string,
+  ): Promise<string> {
+    const sessionDir = path.join(getSessionsDir(), conversationId)
+    await mkdir(sessionDir, { recursive: true })
+    return path.join(sessionDir, 'conversation.jsonl')
+  }
+
+  private async persistConversationJsonl(
+    session: {
+      conversationLogPath?: string
+      persistedMessageCount?: number
+    },
+    conversationId: string,
+    messages: UIMessage[],
+  ): Promise<void> {
+    if (!session.conversationLogPath) return
+
+    const startIndex = Math.max(0, session.persistedMessageCount ?? 0)
+    if (startIndex >= messages.length) return
+
+    const timestamp = new Date().toISOString()
+    const lines: string[] = []
+    for (let i = startIndex; i < messages.length; i++) {
+      lines.push(
+        JSON.stringify({
+          conversationId,
+          index: i,
+          timestamp,
+          message: messages[i],
+        }),
+      )
+    }
+
+    try {
+      await appendFile(session.conversationLogPath, `${lines.join('\n')}\n`)
+      session.persistedMessageCount = messages.length
+    } catch (error) {
+      logger.warn('Failed to persist session conversation JSONL', {
+        conversationId,
+        path: session.conversationLogPath,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
   }
 }

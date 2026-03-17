@@ -9,6 +9,10 @@ export interface AgentSession {
   browserContext?: BrowserContext
   /** MCP server names used when the session was created, for change detection. */
   mcpServerKey?: string
+  /** Absolute path to per-session JSONL conversation log. */
+  conversationLogPath?: string
+  /** Count of messages already persisted to conversationLogPath. */
+  persistedMessageCount?: number
 }
 
 export class SessionStore {
