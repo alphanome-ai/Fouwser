@@ -1,4 +1,4 @@
-// import { basename, extname } from 'node:path'
+import { basename, extname, resolve } from 'node:path'
 import type { LanguageModelV3 } from '@ai-sdk/provider'
 import { AGENT_LIMITS } from '@browseros/shared/constants/limits'
 import type { BrowserContext } from '@browseros/shared/schemas/browser-context'
@@ -14,8 +14,8 @@ import type { Browser } from '../browser/browser'
 import { getSkillsDir } from '../lib/browseros-dir'
 import type { KlavisClient } from '../lib/clients/klavis/klavis-client'
 import { logger } from '../lib/logger'
-// import { ensureVsCodeInstalledForCoding } from '../lib/prerequisites/vscode'
-// import { openVsCodeWebUiForFolder } from '../lib/prerequisites/vscode-web'
+import { ensureVsCodeInstalledForCoding } from '../lib/prerequisites/vscode'
+import { openVsCodeWebUiForFolder } from '../lib/prerequisites/vscode-web'
 import { isSoulBootstrap, readSoul } from '../lib/soul'
 import { buildSkillsCatalog } from '../skills/catalog'
 import { loadSkills } from '../skills/loader'
@@ -44,73 +44,102 @@ export interface AiSdkAgentConfig {
   browserosId?: string
 }
 
-// const CODE_FILE_EXTENSIONS = new Set([
-//   '.ts',
-//   '.tsx',
-//   '.js',
-//   '.jsx',
-//   '.mjs',
-//   '.cjs',
-//   '.py',
-//   '.go',
-//   '.rs',
-//   '.java',
-//   '.kt',
-//   '.swift',
-//   '.c',
-//   '.cc',
-//   '.cpp',
-//   '.h',
-//   '.hpp',
-//   '.cs',
-//   '.rb',
-//   '.php',
-//   '.scala',
-//   '.sh',
-//   '.zsh',
-//   '.sql',
-//   '.html',
-//   '.css',
-//   '.scss',
-//   '.sass',
-//   '.less',
-//   '.vue',
-//   '.svelte',
-// ])
+type ToolWithExecute = {
+  execute?: (...args: unknown[]) => Promise<unknown> | unknown
+}
 
-// const CODE_FILE_NAMES = new Set([
-//   'package.json',
-//   'tsconfig.json',
-//   'bunfig.toml',
-//   'go.mod',
-//   'cargo.toml',
-//   'pyproject.toml',
-//   'requirements.txt',
-//   'dockerfile',
-//   'makefile',
-//   '.gitignore',
-//   '.env',
-//   '.env.example',
-// ])
+function wrapToolExecuteBefore<T extends ToolWithExecute>(
+  toolDef: T,
+  beforeExecute: (...args: unknown[]) => Promise<void>,
+): T {
+  if (typeof toolDef.execute !== 'function') return toolDef
+  const originalExecute = toolDef.execute
+  return {
+    ...toolDef,
+    execute: async (...args: unknown[]) => {
+      await beforeExecute(...args)
+      return originalExecute(...args)
+    },
+  }
+}
 
-// function shouldOpenVsCodeWebForMutation(resolvedPath: string): boolean {
-//   const normalized = resolvedPath.replace(/\\/g, '/').toLowerCase()
-//   const isFouwserPath =
-//     normalized.includes('/.fouwser/') || normalized.endsWith('/.fouwser')
-//   if (
-//     normalized.includes('/sessions/') ||
-//     normalized.includes('/memory/') ||
-//     isFouwserPath
-//   ) {
-//     return false
-//   }
+const CODE_FILE_EXTENSIONS = new Set([
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.cjs',
+  '.py',
+  '.go',
+  '.rs',
+  '.java',
+  '.kt',
+  '.swift',
+  '.c',
+  '.cc',
+  '.cpp',
+  '.h',
+  '.hpp',
+  '.cs',
+  '.rb',
+  '.php',
+  '.scala',
+  '.sh',
+  '.zsh',
+  '.sql',
+  '.html',
+  '.css',
+  '.scss',
+  '.sass',
+  '.less',
+  '.vue',
+  '.svelte',
+])
 
-//   const fileName = basename(normalized)
-//   const fileExt = extname(fileName)
+const CODE_FILE_NAMES = new Set([
+  'package.json',
+  'tsconfig.json',
+  'bunfig.toml',
+  'go.mod',
+  'cargo.toml',
+  'pyproject.toml',
+  'requirements.txt',
+  'dockerfile',
+  'makefile',
+  '.gitignore',
+  '.env',
+  '.env.example',
+])
 
-//   if (CODE_FILE_NAMES.has(fileName)) return true
-//   return CODE_FILE_EXTENSIONS.has(fileExt)
-// }
+function shouldOpenVsCodeWebForMutation(resolvedPath: string): boolean {
+  const normalized = resolvedPath.replace(/\\/g, '/').toLowerCase()
+  const isFouwserPath =
+    normalized.includes('/.fouwser/') ||
+    normalized.endsWith('/.fouwser') ||
+    normalized.startsWith('/.fouwser')
+  if (
+    normalized.includes('/sessions/') ||
+    normalized.includes('/memory/') ||
+    normalized.includes('/skills/') ||
+    isFouwserPath
+  ) {
+    return false
+  }
+
+  const fileName = basename(normalized)
+  const fileExt = extname(fileName)
+
+  if (CODE_FILE_NAMES.has(fileName)) return true
+  return CODE_FILE_EXTENSIONS.has(fileExt)
+}
+
+function getMutationPathArg(arg: unknown): string | null {
+  if (!arg || typeof arg !== 'object') return null
+  if (!('path' in arg)) return null
+  const maybePath = (arg as { path?: unknown }).path
+  return typeof maybePath === 'string' ? maybePath : null
+}
 
 export class AiSdkAgent {
   private constructor(
@@ -124,7 +153,7 @@ export class AiSdkAgent {
     const contextWindow =
       config.resolvedConfig.contextWindowSize ??
       AGENT_LIMITS.DEFAULT_CONTEXT_WINDOW
-    // const isCodingMode = config.resolvedConfig.codingMode === true
+    const isCodingMode = config.resolvedConfig.codingMode === true
 
     // Build language model with overflow protection middleware
     const rawModel = createLanguageModel(config.resolvedConfig)
@@ -167,35 +196,80 @@ export class AiSdkAgent {
     })
     const { clients, tools: externalMcpTools } = await createMcpClients(specs)
 
-    // let hasOpenedVsCodeWeb = false
-    // const maybeOpenVsCodeWeb = async (): Promise<void> => {
-    //   if (!isCodingMode || hasOpenedVsCodeWeb) return
+    let hasOpenedVsCodeWeb = false
+    let openingVsCodeWebPromise: Promise<void> | null = null
+    const maybeOpenVsCodeWeb = async (): Promise<void> => {
+      if (!isCodingMode || hasOpenedVsCodeWeb) return
+      if (openingVsCodeWebPromise) {
+        await openingVsCodeWebPromise
+        return
+      }
 
-    //   try {
-    //     await ensureVsCodeInstalledForCoding()
-    //     const webUiUrl = await openVsCodeWebUiForFolder(
-    //       config.browser,
-    //       config.resolvedConfig.workingDir,
-    //     )
-    //     hasOpenedVsCodeWeb = true
-    //     logger.info('Opened VS Code Web after first filesystem mutation', {
-    //       conversationId: config.resolvedConfig.conversationId,
-    //       folderPath: config.resolvedConfig.workingDir,
-    //       webUiUrl,
-    //     })
-    //   } catch (error) {
-    //     logger.warn('Failed to open VS Code Web after filesystem mutation', {
-    //       conversationId: config.resolvedConfig.conversationId,
-    //       folderPath: config.resolvedConfig.workingDir,
-    //       error: error instanceof Error ? error.message : String(error),
-    //     })
-    //   }
-    // }
+      openingVsCodeWebPromise = (async () => {
+        try {
+          await ensureVsCodeInstalledForCoding()
+          const webUiUrl = await openVsCodeWebUiForFolder(
+            config.browser,
+            config.resolvedConfig.workingDir,
+          )
+          hasOpenedVsCodeWeb = true
+          logger.info('Opened VS Code Web after first filesystem mutation', {
+            conversationId: config.resolvedConfig.conversationId,
+            folderPath: config.resolvedConfig.workingDir,
+            webUiUrl,
+          })
+        } catch (error) {
+          logger.warn('Failed to open VS Code Web after filesystem mutation', {
+            conversationId: config.resolvedConfig.conversationId,
+            folderPath: config.resolvedConfig.workingDir,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        } finally {
+          openingVsCodeWebPromise = null
+        }
+      })()
+      await openingVsCodeWebPromise
+    }
 
     // Add filesystem tools (Pi coding agent) — skip in chat mode (read-only)
     const filesystemTools = config.resolvedConfig.chatMode
       ? {}
       : buildFilesystemToolSet(config.resolvedConfig.workingDir)
+    if (isCodingMode && !config.resolvedConfig.chatMode) {
+      const writeTool = filesystemTools.filesystem_write as ToolWithExecute
+      if (writeTool) {
+        filesystemTools.filesystem_write = wrapToolExecuteBefore(
+          writeTool,
+          async (...args: unknown[]) => {
+            const mutationPath = getMutationPathArg(args[0])
+            if (!mutationPath) return
+            const resolvedPath = resolve(
+              config.resolvedConfig.workingDir,
+              mutationPath,
+            )
+            if (!shouldOpenVsCodeWebForMutation(resolvedPath)) return
+            await maybeOpenVsCodeWeb()
+          },
+        ) as typeof filesystemTools.filesystem_write
+      }
+
+      const editTool = filesystemTools.filesystem_edit as ToolWithExecute
+      if (editTool) {
+        filesystemTools.filesystem_edit = wrapToolExecuteBefore(
+          editTool,
+          async (...args: unknown[]) => {
+            const mutationPath = getMutationPathArg(args[0])
+            if (!mutationPath) return
+            const resolvedPath = resolve(
+              config.resolvedConfig.workingDir,
+              mutationPath,
+            )
+            if (!shouldOpenVsCodeWebForMutation(resolvedPath)) return
+            await maybeOpenVsCodeWeb()
+          },
+        ) as typeof filesystemTools.filesystem_edit
+      }
+    }
     const memoryTools = config.resolvedConfig.chatMode
       ? {}
       : buildMemoryToolSet()
