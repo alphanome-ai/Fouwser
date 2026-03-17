@@ -624,7 +624,7 @@ def run_main() -> None:
         key="BUILD_TYPE",
         env_values=dotenv_values,
         prompt="BUILD_TYPE",
-        default="debug",
+        default="release",
         choices={"release", "debug"},
     )
 
