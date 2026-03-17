@@ -16,9 +16,9 @@ import { getSessionsDir } from '../../lib/browseros-dir'
 import type { KlavisClient } from '../../lib/clients/klavis/klavis-client'
 import { resolveLLMConfig } from '../../lib/clients/llm/config'
 import { logger } from '../../lib/logger'
-import type { ToolRegistry } from '../../tools/tool-registry'
-import { resolveCodingWorkingDir } from '../../lib/preferences/coding-working-dir'
+// import { resolveCodingWorkingDir } from '../../lib/preferences/coding-working-dir'
 import { ensureVsCodeInstalledForCoding } from '../../lib/prerequisites/vscode'
+import type { ToolRegistry } from '../../tools/tool-registry'
 import type { BrowserContext, ChatRequest } from '../types'
 
 export interface ChatServiceDeps {

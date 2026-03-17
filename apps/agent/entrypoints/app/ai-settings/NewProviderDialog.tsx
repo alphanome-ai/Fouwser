@@ -38,7 +38,7 @@ import {
   KIMI_API_KEY_CONFIGURED_EVENT,
   KIMI_API_KEY_GUIDE_CLICKED_EVENT,
 } from '@/lib/constants/analyticsEvents'
-import { useKimiLaunch } from '@/lib/feature-flags/useKimiLaunch'
+// import { useKimiLaunch } from '@/lib/feature-flags/useKimiLaunch'
 import {
   getDefaultBaseUrlForProviders,
   getProviderTemplate,
@@ -180,7 +180,7 @@ export const NewProviderDialog: FC<NewProviderDialogProps> = ({
   const [testResult, setTestResult] = useState<TestResult | null>(null)
   // const { supports } = useCapabilities()
   const { baseUrl: agentServerUrl } = useAgentServerUrl()
-  const kimiLaunch = useKimiLaunch()
+  // const kimiLaunch = useKimiLaunch()
 
   const filteredProviderTypeOptions = providerTypeOptions.filter((_opt) => {
     // if (opt.value === 'moonshot')

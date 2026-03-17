@@ -151,7 +151,7 @@ function getErrorRecovery(): string {
 // LLM call. Kept for MCP prompt serving where clients lack tool definitions.
 // -----------------------------------------------------------------------------
 
-function getCdpToolReference(): string {
+function _getCdpToolReference(): string {
   return `# Tool Reference
 
 ## Page Management
