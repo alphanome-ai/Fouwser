@@ -213,13 +213,13 @@ export class AiSdkAgent {
             config.resolvedConfig.workingDir,
           )
           hasOpenedVsCodeWeb = true
-          logger.info('Opened VS Code Web after first filesystem mutation', {
+          logger.info('Opened VS Code Web for coding workspace', {
             conversationId: config.resolvedConfig.conversationId,
             folderPath: config.resolvedConfig.workingDir,
             webUiUrl,
           })
         } catch (error) {
-          logger.warn('Failed to open VS Code Web after filesystem mutation', {
+          logger.warn('Failed to open VS Code Web for coding workspace', {
             conversationId: config.resolvedConfig.conversationId,
             folderPath: config.resolvedConfig.workingDir,
             error: error instanceof Error ? error.message : String(error),
@@ -229,6 +229,10 @@ export class AiSdkAgent {
         }
       })()
       await openingVsCodeWebPromise
+    }
+
+    if (isCodingMode && !config.resolvedConfig.chatMode) {
+      await maybeOpenVsCodeWeb()
     }
 
     // Add filesystem tools (Pi coding agent) — skip in chat mode (read-only)

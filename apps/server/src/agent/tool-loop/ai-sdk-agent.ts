@@ -4,6 +4,8 @@ import { stepCountIs, ToolLoopAgent, type UIMessage } from 'ai'
 import type { Browser } from '../../browser/browser'
 import type { KlavisClient } from '../../lib/clients/klavis/klavis-client'
 import { logger } from '../../lib/logger'
+import { ensureVsCodeInstalledForCoding } from '../../lib/prerequisites/vscode'
+import { openVsCodeWebUiForFolder } from '../../lib/prerequisites/vscode-web'
 import { isSoulBootstrap, readSoul } from '../../lib/soul'
 import { buildFilesystemToolSet } from '../../tools/filesystem/build-toolset'
 import {
@@ -63,6 +65,27 @@ export class AiSdkAgent {
       const mcp = await createMcpClients(specs)
       clients = mcp.clients
       externalMcpTools = mcp.tools
+    }
+
+    if (isCodingMode && !isChatMode) {
+      try {
+        await ensureVsCodeInstalledForCoding()
+        const webUiUrl = await openVsCodeWebUiForFolder(
+          config.browser,
+          config.resolvedConfig.sessionExecutionDir,
+        )
+        logger.info('Opened VS Code Web for coding workspace', {
+          conversationId: config.resolvedConfig.conversationId,
+          folderPath: config.resolvedConfig.sessionExecutionDir,
+          webUiUrl,
+        })
+      } catch (error) {
+        logger.warn('Failed to open VS Code Web for coding workspace', {
+          conversationId: config.resolvedConfig.conversationId,
+          folderPath: config.resolvedConfig.sessionExecutionDir,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
     }
 
     // Add filesystem tools (Pi coding agent) — skip in chat mode (read-only)
