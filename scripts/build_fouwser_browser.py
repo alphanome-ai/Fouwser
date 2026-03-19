@@ -463,6 +463,13 @@ def build_local_agent_artifacts(
 
     log("Packing custom extension CRXs...")
     agent_key, controller_key = key_dir / "agent.pem", key_dir / "controller.pem"
+    # Always rotate extension keys for local injection builds so packaged CRXs
+    # are re-signed with fresh identities every run.
+    for key_path in (agent_key, controller_key):
+        if key_path.exists():
+            key_path.unlink()
+            log(f"Deleted release key: {key_path}")
+
     packed_agent_crx, packed_controller_crx = (
         work_dir / "agent.crx",
         work_dir / "controller.crx",
