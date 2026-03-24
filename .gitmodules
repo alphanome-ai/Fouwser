@@ -1,4 +1,0 @@
-[submodule "packages/browseros-agent"]
-	path = packages/browseros-agent
-	url = git@github.com:alphanome-ai/BrowserOS-agent.git
-	branch = main

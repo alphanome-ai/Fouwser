@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./ignored",
+    "rootDir": ".",
+    "types": ["bun"]
+  },
+  "include": ["./**/*.ts", "./**/*.js"]
+}

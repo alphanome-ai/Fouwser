@@ -1,0 +1,76 @@
+{
+  "name": "browseros-monorepo",
+  "version": "1.0.0",
+  "description": "BrowserOS monorepo - server, extension, and shared packages",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "postinstall": "bun run build:agent-sdk",
+    "dev:watch": "./tools/dev/run.sh watch",
+    "dev:watch:new": "./tools/dev/run.sh watch --new",
+    "dev:manual": "./tools/dev/run.sh watch --manual",
+    "test:env": "./tools/dev/run.sh test",
+    "test:cleanup": "./tools/dev/run.sh cleanup",
+    "start:server": "bun run --filter @browseros/server --elide-lines=0 start",
+    "start:agent": "bun ./scripts/build/controller-ext.ts && bun run --filter @browseros/agent dev",
+    "build": "bun run build:server && bun run build:agent && bun run build:ext",
+    "build:server": "FORCE_COLOR=1 bun scripts/build/server.ts --target=all",
+    "build:server:test": "FORCE_COLOR=1 bun scripts/build/server.ts --target=darwin-arm64 --no-upload",
+    "start:server:test": "bun run build:server:test && set -a && . apps/server/.env.development && set +a && dist/prod/server/.tmp/binaries/browseros-server-darwin-arm64",
+    "build:agent:dev": "FORCE_COLOR=1 bun run --filter @browseros/agent --elide-lines=0 build:dev",
+    "build:agent": "bun run codegen:agent && bun run --filter @browseros/agent build",
+    "build:agent-sdk": "bun run --filter @browseros-ai/agent-sdk build",
+    "codegen:agent": "bun run --filter @browseros/agent codegen",
+    "build:ext": "FORCE_COLOR=1 bun run --filter browseros-controller --elide-lines=0 build",
+    "test": "FORCE_COLOR=1 bun run --filter @browseros/server --elide-lines=0 test:tools",
+    "test:tools": "bun run --filter @browseros/server test:tools",
+    "test:integration": "bun run --filter @browseros/server test:integration",
+    "test:sdk": "bun run --filter @browseros/server test:sdk",
+    "typecheck": "bun run --filter '*' typecheck",
+    "lint": "bunx biome check",
+    "lint:fix": "bunx biome check --write --unsafe",
+    "gen:cdp": "bun scripts/codegen/cdp-protocol.ts",
+    "clean": "rimraf dist"
+  },
+  "repository": "browseros-ai/BrowserOS-server",
+  "author": "BrowserOS",
+  "license": "AGPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/browseros-ai/BrowserOS/issues"
+  },
+  "homepage": "https://github.com/browseros-ai/BrowserOS#readme",
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.933.0",
+    "@biomejs/biome": "2.4.5",
+    "@sentry/cli": "^2.42.2",
+    "@types/bun": "^1.3.5",
+    "@types/node": "^24.3.3",
+    "commander": "^14.0.1",
+    "dotenv": "^17.2.3",
+    "globals": "^16.4.0",
+    "lefthook": "^2.0.12",
+    "picocolors": "^1.1.1",
+    "rimraf": "^6.0.1",
+    "typedoc": "^0.28.15",
+    "typescript": "^5.9.2"
+  },
+  "trustedDependencies": [
+    "lefthook"
+  ],
+  "engines": {
+    "bun": "1.3.6",
+    "node": "please-use-bun",
+    "npm": "please-use-bun",
+    "yarn": "please-use-bun",
+    "pnpm": "please-use-bun"
+  },
+  "packageManager": "bun@1.3.6",
+  "overrides": {
+    "serialize-javascript": "7.0.3",
+    "lodash-es": "4.17.23"
+  }
+}

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <clipPath id="circle-clip">
+      <circle cx="100" cy="100" r="100" />
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#circle-clip)">
+    
+    <circle cx="100" cy="100" r="100" fill="#6366f1" />
+
+    <text x="100" y="112" text-anchor="middle" fill="white"
+          font-family="Poppins, Montserrat, Avenir Next, Segoe UI, Arial, sans-serif"
+          font-size="30" font-weight="700" letter-spacing="0.8">Fouwser</text>
+
+  </g>
+</svg>

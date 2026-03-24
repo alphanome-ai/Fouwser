@@ -1,0 +1,50 @@
+/**
+ * @license
+ * Copyright 2025 BrowserOS
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
+ * Centralized timeout configuration.
+ */
+
+export const TIMEOUTS = {
+  // Agent/Tool execution
+  TOOL_CALL: 120_000,
+  TOOL_POST_ACTION: 2_000,
+  TEST_PROVIDER: 15_000,
+
+  // Controller communication
+  CONTROLLER_DEFAULT: 60_000,
+  CONTROLLER_BRIDGE: 30_000,
+
+  // MCP operations
+  MCP_DEFAULT: 5_000,
+  MCP_TRANSPORT_PROBE: 5_000,
+  MCP_CLIENT_CONNECT: 15_000,
+
+  // CDP connection
+  CDP_CONNECT: 10_000,
+  CDP_CONNECT_RETRY_DELAY: 1_000,
+  CDP_RECONNECT_DELAY: 5_000,
+  CDP_KEEPALIVE_INTERVAL: 30_000,
+  CDP_KEEPALIVE_TIMEOUT: 10_000,
+  CDP_REQUEST_TIMEOUT: 60_000,
+
+  // External API calls
+  KLAVIS_FETCH: 30_000,
+
+  // Navigation/DOM
+  NAVIGATION: 10_000,
+  PAGE_LOAD_WAIT: 30_000,
+  PAGE_LOAD_POLL_INTERVAL: 150,
+  STABLE_DOM: 3_000,
+  FILE_CHOOSER: 3_000,
+
+  // WebSocket (controller-ext)
+  WS_RECONNECT_INTERVAL: 5_000,
+  WS_HEARTBEAT_INTERVAL: 20_000,
+  WS_HEARTBEAT_TIMEOUT: 5_000,
+  WS_CONNECTION_TIMEOUT: 10_000,
+  WS_REQUEST_TIMEOUT: 30_000,
+} as const
+
+export type TimeoutKey = keyof typeof TIMEOUTS
