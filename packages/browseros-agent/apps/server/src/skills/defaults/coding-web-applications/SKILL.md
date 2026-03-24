@@ -11,12 +11,25 @@ metadata:
 
 Use this skill when implementing or extending a web application, especially when the user prefers Next.js/React and Vercel.
 
+## Supporting Skills
+
+For backend-heavy work, always load and apply `supabase-postgres-best-practices`
+as a supporting skill before implementation details are finalized.
+
+Use it specifically for:
+
+- Database schema design and migrations
+- Query design and performance/indexing decisions
+- Supabase auth and Postgres role/permission design
+- Row-Level Security (RLS) policy design and review
+- Connection management and production database tuning
+
 ## Default Stack
 
-- Framework: Next.js (App Router)/ React + TypeScript
+- Frontend Framework: React/Next.js + TypeScript
 - Styling: Tailwind CSS unless the repo already uses another system
-- Backend: Next.js Route Handlers (`app/api/.../route.ts`) and Server Actions
-- Database: PostgreSQL with Prisma by default
+- Backend: Fastify (preferred) or Express API service with TypeScript
+- Database: PostgreSQL (Supabase)
 - Deploy target: Vercel
 
 Follow the existing stack if the repository already has established patterns.
@@ -34,26 +47,26 @@ Before coding, confirm:
 
 If ambiguous, make safe assumptions and state them in the final response.
 
-### 2. Design the Smallest Safe Architecture
+### 2. Design a Safe Architecture
 
 Prefer this order for backend logic:
 
-1. Server Components for read-heavy UI composition
-2. Server Actions for form-like mutations
-3. Route Handlers for external or programmatic API access
+1. API server layer with Fastify (preferred) or Express
+2. Service/domain layer for business logic
+3. Data access layer for database queries and transactions
 
-Use Route Handlers when:
+Use a dedicated API service when:
 
-- The endpoint is consumed by third-party clients
-- You need explicit REST contracts
-- Webhooks are involved
+- The endpoint is consumed by third-party or mobile clients
+- You need explicit REST contracts and middleware control
+- Webhooks, queues, or long-running jobs are involved
 
 ### 3. Implement End-to-End
 
 For any feature, implement complete vertical slices:
 
 - UI: pages/components and loading/error states
-- Backend: route handler or server action
+- Backend: Express/Fastify API routes + service layer (preferred: REST - CRUD)
 - Data: schema + migration + query logic
 - Validation: input validation (for example with Zod)
 - Authorization: verify access on the server
@@ -122,7 +135,7 @@ Common cases:
 
 ## Quick Decision Rules
 
-- User says "build a web app": scaffold Next.js app with App Router and TypeScript
-- User asks for backend: use Route Handlers and/or Server Actions
+- User says "build a web app": scaffold React app or Next.js app
+- User asks for backend: use Fastify or Express API (not Next.js Route Handlers)
 - User asks for deploy: optimize for Vercel defaults and environment-based config
 - Existing repo conflicts with defaults: follow repo conventions, not this baseline

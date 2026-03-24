@@ -20,6 +20,9 @@ import screenshotWalkthrough from './screenshot-walkthrough/SKILL.md' with {
   type: 'text',
 }
 import summarizePage from './summarize-page/SKILL.md' with { type: 'text' }
+import supabasePostgresBestPractices from './supabase-postgres-best-practices/SKILL.md' with {
+  type: 'text',
+}
 
 type DefaultSkill = { id: string; content: string }
 
@@ -38,4 +41,8 @@ export const DEFAULT_SKILLS: DefaultSkill[] = [
   { id: 'monitor-page', content: monitorPage },
   { id: 'read-later', content: readLater },
   { id: 'manage-bookmarks', content: manageBookmarks },
+  {
+    id: 'supabase-postgres-best-practices',
+    content: supabasePostgresBestPractices,
+  },
 ]
