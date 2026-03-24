@@ -93,7 +93,7 @@ function getCompleteTasks(): string {
 - Do not refuse by default, attempt tasks even when outcomes are uncertain
 - If an action needs execution, perform it decisively
 - For ambiguous/unclear requests, ask targeted clarifying questions before proceeding
-- **NEVER open a new tab/page.** Always operate on the current page. Only use \`new_page\` if the user explicitly asks to open a new tab.
+- Default to the current page. Use \`new_page\` only when the user explicitly asks to open a page/tab, or when manual handoff requires user interaction on a specific URL (login, 2FA, CAPTCHA, consent, payment, SSO).
 </task_completion>`
 }
 
@@ -126,10 +126,29 @@ function getHandleObstacles(): string {
   return `<obstacle_handling>
 - Cookie banners and popups → dismiss immediately and continue
 - Age verification and terms gates → accept and proceed
-- Login required → notify user, proceed if credentials available
-- CAPTCHA → notify user, pause for manual resolution
-- 2FA → notify user, pause for completion
+- Login required → proceed if credentials are available; otherwise open the required URL and hand off to user
+- CAPTCHA → keep the verification page visible, ask user to complete it, then continue
+- 2FA → keep the verification page visible, ask user to complete it, then continue
 </obstacle_handling>`
+}
+
+// -----------------------------------------------------------------------------
+// section: manual-handoff
+// -----------------------------------------------------------------------------
+
+function getManualHandoff(
+  _exclude: Set<string>,
+  options?: BuildSystemPromptOptions,
+): string {
+  if (options?.codingMode) return ''
+
+  return `<manual_handoff>
+When a step requires real-time user interaction and cannot be completed autonomously:
+- Open the relevant page with \`new_page(url)\` if the required site is not already visible.
+- Give concise numbered steps for what the user must do in the UI.
+- Ask the user to reply when done, then continue automatically from that checkpoint.
+- Do not ask the user to perform actions that available tools can do.
+</manual_handoff>`
 }
 
 // -----------------------------------------------------------------------------
@@ -557,7 +576,7 @@ Before implementation, confirm the task fits this scope:
 <workflow>
 1. Create/build the app implementation needed for the request (new app or required edits).
 2. Validate with focused checks using \`filesystem_bash_coding\` (tests/lint/typecheck/build) for touched code.
-3. Run preview: start the app's local dev server and open the local preview URL in a new browser tab.
+3. Run preview: start the app's local dev server and open the local preview URL in a new browser tab using the \`http://127.0.0.1:<port>/\` host format.
 4. Prompt the user before GitHub push. Only push after explicit user approval.
 5. Prompt the user before Vercel deploy. Only deploy after explicit user approval.
 6. Report clearly: summarize what changed, validation results, preview command/URL, GitHub status, and deploy status.
@@ -577,10 +596,10 @@ Open VS Code Web at the right point in the workflow unless the user explicitly a
 <web_app_preview>
 For web-development coding tasks, running a local dev server and opening the app URL is a required completion step before final handoff:
 1. Detect runnable scripts/commands (for example \`dev\`, \`start\`, \`preview\`) from project files.
-2. Start the server using \`filesystem_bash_coding\` with \`background: true\`, set \`cwd\` to the target repo folder, and optionally set \`logFile\`.
+2. Start the server using \`filesystem_bash_coding\` with \`background: true\`, set \`cwd\` to the target repo folder, and optionally set \`logFile\`. Prefer binding dev servers to host \`127.0.0.1\` when flags/config allow.
 3. Ensure the log file is written inside that repo folder (use relative \`logFile\` paths).
-4. Determine the local URL (from logs/output or known default port like 3000/4173/5173/8080).
-5. Open the app in browser using \`new_page(url)\` so the controller opens it.
+4. Determine the local URL from logs/output and normalize it to \`http://127.0.0.1:<port>/\` (if logs show \`localhost\`, \`0.0.0.0\`, or \`[::]\`, rewrite host to \`127.0.0.1\`).
+5. Open the app in browser using \`new_page(url)\` with the normalized \`http://127.0.0.1:<port>/\` URL so the controller opens it.
 6. Include the running command and opened URL in the final report.
 
 Do not mark the task complete until this preview step is done, unless blocked by an explicit environment limitation.
@@ -651,6 +670,7 @@ const promptSections: Record<string, PromptSectionFn> = {
   'auto-included-context': getAutoIncludedContext,
   'observe-act-verify': getObserveActVerify,
   'handle-obstacles': getHandleObstacles,
+  'manual-handoff': getManualHandoff,
   'error-recovery': getErrorRecovery,
   'external-integrations': getExternalIntegrations,
   style: getStyle,

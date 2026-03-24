@@ -1,20 +1,19 @@
 ---
 name: coding-web-applications
-description: Build or modify full-stack web applications with a Next.js-first, Vercel-focused approach. Use when the user asks for web app features, backend APIs, database integrations, auth, or production deployment guidance.
+description: Build or modify full-stack web applications with a Next.js-first (App Router), Vercel-focused approach. Use when the user asks for web app features, backend integrations, database connections, auth, or production deployment guidance.
 metadata:
   display-name: Coding Web Applications
   enabled: "true"
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Coding Web Applications
 
-Use this skill when implementing or extending a web application, especially when the user prefers Next.js/React and Vercel.
+Use this skill when implementing or extending a full-stack web application, specifically relying on Next.js (App Router), React, and Vercel.
 
 ## Supporting Skills
 
-For backend-heavy work, always load and apply `supabase-postgres-best-practices`
-as a supporting skill before implementation details are finalized.
+For backend-heavy work involving the database, always load and apply `supabase-postgres-best-practices` as a supporting skill before implementation details are finalized.
 
 Use it specifically for:
 
@@ -22,14 +21,15 @@ Use it specifically for:
 - Query design and performance/indexing decisions
 - Supabase auth and Postgres role/permission design
 - Row-Level Security (RLS) policy design and review
-- Connection management and production database tuning
 
 ## Default Stack
 
-- Frontend Framework: React/Next.js + TypeScript
-- Styling: Tailwind CSS unless the repo already uses another system
-- Backend: Fastify (preferred) or Express API service with TypeScript
-- Database: PostgreSQL (Supabase)
+- Framework: Next.js (App Router) + TypeScript
+- Styling: Tailwind CSS unless the repo uses another system
+- Data Fetching/Mutations: React Server Components (RSC) & Server Actions
+- External APIs/Webhooks: Next.js Route Handlers (`app/api`)
+- Database: PostgreSQL (Supabase) via Supabase JS Client or Prima ORM
+- Validation: Zod for end-to-end type safety
 - Deploy target: Vercel
 
 Follow the existing stack if the repository already has established patterns.
@@ -43,58 +43,50 @@ Before coding, confirm:
 - Feature goal and success criteria
 - Data model changes (if any)
 - Auth/authorization expectations
-- Runtime constraints (edge vs node)
+- Client vs. Server Component boundaries
 
-If ambiguous, make safe assumptions and state them in the final response.
+If ambiguous, make safe assumptions and state them in your final response.
 
-### 2. Design a Safe Architecture
+### 2. Design a Next.js-Native Architecture
 
-Prefer this order for backend logic:
+Prefer this order for data flow and logic:
 
-1. API server layer with Fastify (preferred) or Express
-2. Service/domain layer for business logic
-3. Data access layer for database queries and transactions
-
-Use a dedicated API service when:
-
-- The endpoint is consumed by third-party or mobile clients
-- You need explicit REST contracts and middleware control
-- Webhooks, queues, or long-running jobs are involved
+1. **Server Components:** Use for read-only data fetching directly from the database to keep payload sizes small.
+2. **Server Actions:** Use for form submissions, database mutations, and revalidating cache paths.
+3. **Route Handlers (`app/api/...`):** Use ONLY when the endpoint is consumed by third-party services, mobile clients, or webhooks. 
 
 ### 3. Implement End-to-End
 
 For any feature, implement complete vertical slices:
 
-- UI: pages/components and loading/error states
-- Backend: Express/Fastify API routes + service layer (preferred: REST - CRUD)
-- Data: schema + migration + query logic
-- Validation: input validation (for example with Zod)
-- Authorization: verify access on the server
+- **UI:** Server/Client components, plus loading (`loading.tsx`) and error (`error.tsx`) states.
+- **Backend Logic:** Server Actions with strict input validation using Zod.
+- **Data:** Schema updates + Supabase query logic.
+- **Authorization:** Verify user session and permissions on the server before executing mutations.
 
 Do not leave TODO placeholders for core behavior unless explicitly requested.
 
-### 4. Data and API Conventions
+### 4. Data, Types, and Error Handling
 
-- Keep DB access in server-only modules
-- Never expose secrets to client components
-- Validate all API inputs server-side
-- Return typed, predictable payloads and explicit error status codes
-- Add optimistic UI only when rollback behavior is clear
+- **Type Safety:** Share TypeScript types/Zod schemas between Client Components and Server Actions to ensure predictable payloads.
+- **State Management:** Rely on the Next.js cache and Server Components for standard data. Use TanStack Query (React Query) or Zustand only if highly interactive, client-side state is required.
+- **Error Handling:** Return a "Result" pattern from Server Actions (e.g., `{ success: false, error: "Validation failed" }`) so the UI can handle expected errors gracefully without crashing.
+- **Security:** Keep DB access in server-only modules (`.server.ts` conventions). Never expose secrets to client components.
 
 ### 5. Vercel Readiness
 
 Before finishing, ensure:
 
-- Environment variables are documented and used correctly
-- No Node-only API is used in Edge runtime code
-- Caching/revalidation strategy is explicit (`revalidatePath`, tags, or route config)
-- Build succeeds with production settings
+- Environment variables are documented and used correctly.
+- Caching/revalidation strategy is explicit (use `revalidatePath` or `revalidateTag` in Server Actions after mutations).
+- No Node-only packages are used in Edge runtime contexts unless explicitly configured.
+- Build succeeds with production settings.
 
 If deployment is requested, include concise Vercel steps:
 
-1. Configure project and env vars
-2. Run migrations for production database
-3. Deploy and verify critical flows
+1. Configure project and env vars in the Vercel Dashboard.
+2. Run migrations for the production database.
+3. Deploy and verify critical flows.
 
 ### 6. Verify Locally
 
@@ -108,34 +100,25 @@ If any check cannot run, explain exactly why and what remains unverified.
 
 ### 7. Manual Handoff When Automation Is Blocked
 
-If you cannot finish a requested step because tooling or access is unavailable
-(missing CLI install, auth/2FA/CAPTCHA, permission limits, org policy), do not
-stop at "blocked."
+If you cannot finish a requested step because tooling or access is unavailable (missing CLI install, auth/2FA/CAPTCHA, permission limits), do not stop at "blocked."
 
 Instead:
 
-1. State exactly what failed and where
-2. Give short numbered UI steps for the user
-3. Give exact next commands to run after the user completes those steps
-4. Continue once the user confirms completion
-
-Common cases:
-
-- GitHub push blocked: guide repo creation/access on GitHub, then provide
-  `git remote add origin ...` and `git push -u origin <branch>`
-- Vercel deploy blocked: guide project/env setup in Vercel, then provide
-  `vercel link` and `vercel --prod` (or dashboard deploy path)
+1. State exactly what failed and where.
+2. Give short numbered UI steps for the user.
+3. Give exact next commands to run after the user completes those steps.
+4. Continue once the user confirms completion.
 
 ## Execution Style
 
-- Prefer minimal, targeted diffs over broad refactors
-- Preserve repository conventions (naming, folder layout, tooling)
-- Add or update tests when behavior changes
-- Explain assumptions and tradeoffs clearly in the handoff
+- Prefer minimal, targeted diffs over broad refactors.
+- Preserve repository conventions (naming, folder layout, tooling).
+- Add or update tests when behavior changes.
+- Explain assumptions and tradeoffs clearly in the handoff.
 
 ## Quick Decision Rules
 
-- User says "build a web app": scaffold React app or Next.js app
-- User asks for backend: use Fastify or Express API (not Next.js Route Handlers)
-- User asks for deploy: optimize for Vercel defaults and environment-based config
-- Existing repo conflicts with defaults: follow repo conventions, not this baseline
+- **User asks to fetch data:** Default to React Server Components; pass data to Client Components as props.
+- **User asks to update data:** Default to Server Actions with `revalidatePath`.
+- **User asks for an API endpoint:** Use Next.js Route Handlers (`app/api`) ONLY if requested by an external service; otherwise, stick to Server Actions.
+- **Existing repo conflicts with defaults:** Follow repo conventions, not this baseline.
