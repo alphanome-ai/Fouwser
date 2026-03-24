@@ -37,6 +37,13 @@ const loadingSkillCards = [
   'loading-f',
 ]
 
+// Skills in this list are hidden from the Skills UI only.
+const UI_HIDDEN_SKILL_IDS = new Set<string>([
+  'supabase-postgres-best-practices',
+  'coding-web-applications',
+  'deploy-web-application-vercel',
+])
+
 export const SkillsPage: FC = () => {
   const {
     skills,
@@ -53,7 +60,10 @@ export const SkillsPage: FC = () => {
   const [editingSkill, setEditingSkill] = useState<SkillDetail | null>(null)
   const [skillToDelete, setSkillToDelete] = useState<SkillMeta | null>(null)
 
-  const enabledCount = skills.filter((skill) => skill.enabled).length
+  const visibleSkills = skills.filter(
+    (skill) => !UI_HIDDEN_SKILL_IDS.has(skill.id),
+  )
+  const enabledCount = visibleSkills.filter((skill) => skill.enabled).length
 
   const handleCreate = () => {
     setEditingSkill(null)
@@ -92,7 +102,7 @@ export const SkillsPage: FC = () => {
   return (
     <div className="fade-in slide-in-from-bottom-5 animate-in space-y-6 duration-500">
       <SkillsHeader
-        skillCount={skills.length}
+        skillCount={visibleSkills.length}
         enabledCount={enabledCount}
         onCreateClick={handleCreate}
       />
@@ -103,13 +113,13 @@ export const SkillsPage: FC = () => {
         <SkillsErrorState onRetry={() => void refetch()} />
       ) : null}
 
-      {!isLoading && !error && skills.length === 0 ? (
+      {!isLoading && !error && visibleSkills.length === 0 ? (
         <EmptyState onCreateClick={handleCreate} />
       ) : null}
 
-      {!isLoading && !error && skills.length > 0 ? (
+      {!isLoading && !error && visibleSkills.length > 0 ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {skills.map((skill) => (
+          {visibleSkills.map((skill) => (
             <SkillCard
               key={skill.id}
               skill={skill}
