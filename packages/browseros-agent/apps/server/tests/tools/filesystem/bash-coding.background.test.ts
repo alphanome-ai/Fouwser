@@ -34,6 +34,24 @@ function extractLogPath(toolText: string): string {
   return match[1].trim()
 }
 
+function extractPid(toolText: string): number {
+  const match = toolText.match(/PID:\s+(\d+)/m)
+  if (!match?.[1]) {
+    throw new Error(`Unable to parse pid from tool output:\n${toolText}`)
+  }
+  return Number.parseInt(match[1], 10)
+}
+
+function extractRegistryPath(toolText: string): string {
+  const match = toolText.match(/Process registry:\s+(.+)$/m)
+  if (!match?.[1]) {
+    throw new Error(
+      `Unable to parse process registry path from tool output:\n${toolText}`,
+    )
+  }
+  return match[1].trim()
+}
+
 beforeEach(async () => {
   tmpDir = join(
     tmpdir(),
@@ -73,6 +91,33 @@ describe('filesystem_bash_coding background mode', () => {
 
     const content = await waitForLogToContain(logPath, 'coding-bg-ok')
     expect(content).toContain('coding-bg-ok')
+  })
+
+  it('persists coding background process metadata under .fouwser/proc', async () => {
+    const result = await exec({
+      command: 'echo "coding-managed-ok"; sleep 5',
+      background: true,
+    })
+
+    expect(result.isError).toBeUndefined()
+    const pid = extractPid(result.text)
+    const procDir = extractRegistryPath(result.text)
+    const recordPath = join(procDir, `${pid}.json`)
+
+    const rawRecord = await readFile(recordPath, 'utf-8')
+    const record = JSON.parse(rawRecord) as {
+      pid: number
+      toolName: string
+      command: string
+      cwd: string
+      logPath: string
+    }
+
+    expect(record.pid).toBe(pid)
+    expect(record.toolName).toBe('filesystem_bash_coding')
+    expect(record.command).toContain('coding-managed-ok')
+    expect(record.cwd).toBe(resolve(tmpDir))
+    expect(record.logPath.startsWith(resolve(tmpDir))).toBe(true)
   })
 
   it('fails fast when long-running startup check detects immediate exit', async () => {

@@ -1,6 +1,11 @@
-import { isAbsolute, relative, resolve } from 'node:path'
+import { resolve } from 'node:path'
 import { tool } from 'ai'
 import { z } from 'zod'
+import {
+  DEFAULT_BACKGROUND_MAX_RUNTIME_SECONDS,
+  runProcessRuntimeMaintenance,
+  startManagedBackgroundProcess,
+} from './process-runtime'
 import {
   DEFAULT_BASH_TIMEOUT,
   executeWithMetrics,
@@ -11,18 +16,9 @@ import {
 
 const TOOL_NAME = 'filesystem_bash'
 
-function isWithinDirectory(baseDir: string, targetPath: string): boolean {
-  const relPath = relative(baseDir, targetPath)
-  return relPath === '' || (!relPath.startsWith('..') && !isAbsolute(relPath))
-}
-
 function getShellArgs(): [string, string] {
   if (process.platform === 'win32') return ['cmd.exe', '/c']
   return [process.env.SHELL || '/bin/sh', '-c']
-}
-
-function quoteForShell(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`
 }
 
 type BashToolParams = {
@@ -31,6 +27,7 @@ type BashToolParams = {
   timeout?: number
   background?: boolean
   logFile?: string
+  maxRuntimeSeconds?: number
 }
 
 function combineOutput(stdoutText: string, stderrText: string): string {
@@ -82,23 +79,6 @@ function resolveCommandCwd(toolCwd: string, requestedCwd?: string): string {
   return requestedCwd ? resolve(toolCwd, requestedCwd) : toolCwd
 }
 
-function resolveBackgroundLogPath(
-  commandCwd: string,
-  logFile?: string,
-): { logPath?: string; error?: string } {
-  if (logFile && isAbsolute(logFile)) {
-    return { error: 'logFile must be a relative path inside cwd.' }
-  }
-
-  const requestedLogFile = logFile || `.browseros-bg-${Date.now()}.log`
-  const logPath = resolve(commandCwd, requestedLogFile)
-  if (!isWithinDirectory(commandCwd, logPath)) {
-    return { error: 'logFile must resolve inside cwd.' }
-  }
-
-  return { logPath }
-}
-
 function formatForegroundOutput(output: string): string {
   const truncated = truncateTail(output)
   if (truncated.truncated) {
@@ -111,6 +91,7 @@ async function runBackgroundCommand(
   shell: string,
   flag: string,
   params: BashToolParams,
+  toolCwd: string,
   commandCwd: string,
 ): Promise<FilesystemToolResult> {
   if (process.platform === 'win32') {
@@ -120,37 +101,23 @@ async function runBackgroundCommand(
     }
   }
 
-  const { logPath, error } = resolveBackgroundLogPath(
-    commandCwd,
-    params.logFile,
-  )
-  if (error || !logPath)
-    return { text: error || 'Invalid logFile.', isError: true }
+  const { process: managedProcess, error } =
+    await startManagedBackgroundProcess({
+      shell,
+      flag,
+      toolCwd,
+      command: params.command,
+      commandCwd,
+      logFile: params.logFile,
+      toolName: TOOL_NAME,
+      maxRuntimeSeconds:
+        params.maxRuntimeSeconds ?? DEFAULT_BACKGROUND_MAX_RUNTIME_SECONDS,
+    })
+  if (error || !managedProcess)
+    return { text: error || 'Unknown error.', isError: true }
 
-  const launchCommand = `nohup sh -c ${quoteForShell(params.command)} > ${quoteForShell(logPath)} 2>&1 & echo $!`
-  const bgProc = Bun.spawn([shell, flag, launchCommand], {
-    cwd: commandCwd,
-    stdout: 'pipe',
-    stderr: 'pipe',
-    env: { ...process.env },
-  })
-
-  const { stdoutText, stderrText, exitCode } = await readProcessOutput(bgProc)
-
-  if (exitCode !== 0) {
-    const errorOutput = [stdoutText, stderrText].filter(Boolean).join('\n')
-    return {
-      text:
-        errorOutput ||
-        `Failed to start background process (exit code: ${exitCode})`,
-      isError: true,
-    }
-  }
-
-  const pidMatch = stdoutText.trim().match(/\d+/)
-  const pidInfo = pidMatch ? `PID: ${pidMatch[0]}\n` : ''
   return {
-    text: `Started background command.\nCWD: ${commandCwd}\n${pidInfo}Log: ${logPath}`,
+    text: `Started background command.\nCWD: ${commandCwd}\nPID: ${managedProcess.pid}\nMax runtime: ${managedProcess.maxRuntimeSeconds}s\nExpires at: ${new Date(managedProcess.expiresAtMs).toISOString()}\nProcess registry: ${managedProcess.procDir}\nManaged background processes: ${managedProcess.activeCount}\nLog: ${managedProcess.logPath}`,
   }
 }
 
@@ -219,6 +186,12 @@ export function createBashTool(cwd: string) {
         .describe(
           'Log file path for background mode. Must be a relative path inside cwd. Defaults to a generated .browseros-bg-*.log file.',
         ),
+      maxRuntimeSeconds: z
+        .number()
+        .optional()
+        .describe(
+          `Maximum allowed runtime for background commands in seconds (default: ${DEFAULT_BACKGROUND_MAX_RUNTIME_SECONDS}). Expired processes are terminated and removed from .fouwser/proc.`,
+        ),
     }),
     execute: (params) =>
       executeWithMetrics(TOOL_NAME, async () => {
@@ -227,8 +200,17 @@ export function createBashTool(cwd: string) {
         const commandCwd = resolveCommandCwd(toolCwd, params.cwd)
         const commandParams = params as BashToolParams
 
+        if (process.platform !== 'win32')
+          await runProcessRuntimeMaintenance(toolCwd)
+
         return commandParams.background
-          ? runBackgroundCommand(shell, flag, commandParams, commandCwd)
+          ? runBackgroundCommand(
+              shell,
+              flag,
+              commandParams,
+              toolCwd,
+              commandCwd,
+            )
           : runForegroundCommand(shell, flag, commandParams, commandCwd)
       }),
     toModelOutput,

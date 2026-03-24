@@ -98,6 +98,29 @@ Run relevant checks after changes:
 
 If any check cannot run, explain exactly why and what remains unverified.
 
+After building or making code changes, ensure a local dev server is running:
+
+- Open the code repository directory in a browser tab using `vscode_web` with `action: "open"` and `folder` set to the project/repo.
+- If a dev server is not running, start it immediately.
+- If one is already running for the same project, reuse it instead of starting duplicates.
+- After ensuring that the dev server is running, open the application URL in a browser tab using `new_page(URL)`.
+- Do not finalize the task without an active dev server preview, unless the user explicitly says to skip it.
+
+### 6.1 Dev Server Host and Port Recovery
+
+- Always run dev servers on `127.0.0.1` (not `localhost`, `0.0.0.0`, or `::`).
+- Prefer explicit host/port flags when available (for example `--host 127.0.0.1`).
+
+If dev server startup fails due to port-in-use errors (`EADDRINUSE`, "address already in use"):
+
+1. Identify the blocked port from logs/error output.
+2. Kill the process listening on that port using OS-appropriate command:
+   - macOS/Linux:
+     - `lsof -ti:<port> | xargs kill -9`
+   - Windows (PowerShell):
+     - `$pids = Get-NetTCPConnection -LocalPort <port> -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if ($pids) { $pids | ForEach-Object { Stop-Process -Id $_ -Force } }`
+3. Restart the dev server on `127.0.0.1` and continue.
+
 ### 7. Manual Handoff When Automation Is Blocked
 
 If you cannot finish a requested step because tooling or access is unavailable (missing CLI install, auth/2FA/CAPTCHA, permission limits), do not stop at "blocked."

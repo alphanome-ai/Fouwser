@@ -34,6 +34,33 @@ function extractLogPath(toolText: string): string {
   return match[1].trim()
 }
 
+function extractPid(toolText: string): number {
+  const match = toolText.match(/PID:\s+(\d+)/m)
+  if (!match?.[1]) {
+    throw new Error(`Unable to parse pid from tool output:\n${toolText}`)
+  }
+  return Number.parseInt(match[1], 10)
+}
+
+function extractRegistryPath(toolText: string): string {
+  const match = toolText.match(/Process registry:\s+(.+)$/m)
+  if (!match?.[1]) {
+    throw new Error(
+      `Unable to parse process registry path from tool output:\n${toolText}`,
+    )
+  }
+  return match[1].trim()
+}
+
+function isPidRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
 beforeEach(async () => {
   tmpDir = join(
     tmpdir(),
@@ -74,6 +101,36 @@ describe('filesystem_bash background mode', () => {
 
     const content = await waitForLogToContain(logPath, 'bg-default-ok')
     expect(content).toContain('bg-default-ok')
+  })
+
+  it('persists background process metadata under .fouwser/proc', async () => {
+    const result = await exec({
+      command: 'echo "managed-bg-ok"; sleep 5',
+      background: true,
+    })
+
+    expect(result.isError).toBeUndefined()
+    const pid = extractPid(result.text)
+    const procDir = extractRegistryPath(result.text)
+    const recordPath = join(procDir, `${pid}.json`)
+
+    const rawRecord = await readFile(recordPath, 'utf-8')
+    const record = JSON.parse(rawRecord) as {
+      pid: number
+      toolName: string
+      command: string
+      cwd: string
+      logPath: string
+      expiresAtMs: number
+      startedAtMs: number
+    }
+
+    expect(record.pid).toBe(pid)
+    expect(record.toolName).toBe('filesystem_bash')
+    expect(record.command).toContain('managed-bg-ok')
+    expect(record.cwd).toBe(resolve(tmpDir))
+    expect(record.logPath.startsWith(resolve(tmpDir))).toBe(true)
+    expect(record.expiresAtMs).toBeGreaterThan(record.startedAtMs)
   })
 
   it('uses command cwd and writes relative logFile inside that cwd', async () => {
@@ -119,4 +176,27 @@ describe('filesystem_bash background mode', () => {
     expect(result.isError).toBe(true)
     expect(result.text).toContain('logFile must resolve inside cwd.')
   })
+
+  it('kills and removes expired managed background processes on next run', async () => {
+    const startResult = await exec({
+      command: 'sleep 30',
+      background: true,
+      maxRuntimeSeconds: 1,
+    })
+
+    expect(startResult.isError).toBeUndefined()
+    const pid = extractPid(startResult.text)
+    const procDir = extractRegistryPath(startResult.text)
+    const recordPath = join(procDir, `${pid}.json`)
+
+    await Bun.sleep(2_100)
+    const trigger = await exec({ command: 'echo "cleanup-trigger"' })
+    expect(trigger.isError).toBeUndefined()
+
+    await Bun.sleep(400)
+    expect(isPidRunning(pid)).toBe(false)
+
+    const recordExists = await Bun.file(recordPath).exists()
+    expect(recordExists).toBe(false)
+  }, 20_000)
 })

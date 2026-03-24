@@ -1,22 +1,47 @@
+import { appendFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import type { Browser } from '../../browser/browser'
+import {
+  DEFAULT_BACKGROUND_MAX_RUNTIME_SECONDS,
+  ensureProcessRuntimeDir,
+  registerBackgroundProcess,
+  removeBackgroundProcessRecord,
+  runProcessRuntimeMaintenance,
+} from '../../tools/filesystem/process-runtime'
 import { logger } from '../logger'
 
 interface VsCodeWebServerState {
   baseUrl: string
   port: number
   process: ReturnType<typeof Bun.spawn>
+  runtimeRoot: string
+  logPath: string
+  expiresAtMs: number | null
 }
 
 const START_TIMEOUT_MS = 20_000
 const OUTPUT_BUFFER_LIMIT = 24_000
 const OUTPUT_SNIPPET_LIMIT = 300
+const VSCODE_WEB_TOOL_NAME = 'vscode_web_server'
+const VSCODE_WEB_MAX_RUNTIME_SECONDS = DEFAULT_BACKGROUND_MAX_RUNTIME_SECONDS
+const PROCESS_RUNTIME_ROOT = process.cwd()
 
 let serverState: VsCodeWebServerState | null = null
 let serverStartPromise: Promise<VsCodeWebServerState> | null = null
 
 const openedFolders = new Set<string>()
+
+function isProcessAlive(proc: ReturnType<typeof Bun.spawn>): boolean {
+  const pid = proc.pid
+  if (typeof pid !== 'number' || pid <= 0) return false
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
 
 function extractWebUiUrl(text: string): string | null {
   const match = text.match(/Web UI available at (https?:\/\/\S+)/)
@@ -47,6 +72,7 @@ async function findAvailablePort(host = '127.0.0.1'): Promise<number> {
 
 async function waitForWebUiUrl(
   process: ReturnType<typeof Bun.spawn>,
+  logPath: string,
 ): Promise<string> {
   const decoder = new TextDecoder()
   let output = ''
@@ -93,6 +119,7 @@ async function waitForWebUiUrl(
           const { done, value } = await reader.read()
           if (done) break
           const chunk = decoder.decode(value, { stream: true })
+          void appendFile(logPath, chunk).catch(() => {})
           const url = appendAndExtract(chunk)
           if (url) {
             settle(url)
@@ -132,28 +159,68 @@ async function waitForWebUiUrl(
 }
 
 async function startVsCodeWebServer(): Promise<VsCodeWebServerState> {
+  await runProcessRuntimeMaintenance(PROCESS_RUNTIME_ROOT)
   const port = await findAvailablePort('127.0.0.1')
+  const procDir = await ensureProcessRuntimeDir(PROCESS_RUNTIME_ROOT)
+  const logPath = join(procDir, `vscode-web-${Date.now()}-${port}.log`)
   const childProcess = Bun.spawn(
     ['code', 'serve-web', '--host=127.0.0.1', `--port=${port}`],
     {
+      cwd: PROCESS_RUNTIME_ROOT,
       stdout: 'pipe',
       stderr: 'pipe',
       env: { ...process.env },
     },
   )
 
+  const pid = childProcess.pid
+  let expiresAtMs: number | null = null
+
   try {
-    const baseUrl = await waitForWebUiUrl(childProcess)
-    const state = { baseUrl, port, process: childProcess }
+    const baseUrl = await waitForWebUiUrl(childProcess, logPath)
+
+    if (typeof pid === 'number' && pid > 0) {
+      const registration = await registerBackgroundProcess({
+        toolCwd: PROCESS_RUNTIME_ROOT,
+        pid,
+        command: `code serve-web --host=127.0.0.1 --port=${port}`,
+        commandCwd: PROCESS_RUNTIME_ROOT,
+        logPath,
+        toolName: VSCODE_WEB_TOOL_NAME,
+        maxRuntimeSeconds: VSCODE_WEB_MAX_RUNTIME_SECONDS,
+      })
+      expiresAtMs = registration.expiresAtMs
+    }
+
+    const state: VsCodeWebServerState = {
+      baseUrl,
+      port,
+      process: childProcess,
+      runtimeRoot: PROCESS_RUNTIME_ROOT,
+      logPath,
+      expiresAtMs,
+    }
 
     childProcess.exited.then((code) => {
       if (serverState?.process === childProcess) {
         logger.warn('VS Code Web server exited', { code, port })
         serverState = null
       }
+      if (typeof pid === 'number' && pid > 0) {
+        void removeBackgroundProcessRecord({
+          toolCwd: PROCESS_RUNTIME_ROOT,
+          pid,
+        })
+      }
     })
 
-    logger.info('VS Code Web server started', { port, baseUrl })
+    logger.info('VS Code Web server started', {
+      port,
+      baseUrl,
+      logPath,
+      maxRuntimeSeconds: VSCODE_WEB_MAX_RUNTIME_SECONDS,
+      expiresAtMs,
+    })
     return state
   } catch (error) {
     try {
@@ -161,12 +228,23 @@ async function startVsCodeWebServer(): Promise<VsCodeWebServerState> {
     } catch {
       // ignore
     }
+    if (typeof pid === 'number' && pid > 0) {
+      await removeBackgroundProcessRecord({
+        toolCwd: PROCESS_RUNTIME_ROOT,
+        pid,
+      })
+    }
     throw error
   }
 }
 
 async function ensureVsCodeWebServer(): Promise<VsCodeWebServerState> {
-  if (serverState) return serverState
+  await runProcessRuntimeMaintenance(PROCESS_RUNTIME_ROOT)
+
+  if (serverState && isProcessAlive(serverState.process)) return serverState
+  if (serverState && !isProcessAlive(serverState.process)) {
+    serverState = null
+  }
   if (serverStartPromise) return serverStartPromise
 
   serverStartPromise = startVsCodeWebServer()
