@@ -41,7 +41,9 @@ const loadingSkillCards = [
 const UI_HIDDEN_SKILL_IDS = new Set<string>([
   'supabase-postgres-best-practices',
   'coding-web-applications',
-  'deploy-web-application-vercel',
+  'deploy-to-vercel',
+  'vercel-cli-with-tokens',
+  'vercel-react-best-practices',
 ])
 
 export const SkillsPage: FC = () => {

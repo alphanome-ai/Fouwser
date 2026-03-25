@@ -13,20 +13,24 @@ Use this skill when implementing or extending a full-stack web application, spec
 
 ## Supporting Skills
 
-For backend-heavy work involving the database, always load and apply `supabase-postgres-best-practices` as a supporting skill before implementation details are finalized.
+For frontend work involving the database, always load and apply `vercel-react-best-practices` as a supporting skill before implementation details are finalized and use the skills.
 
-Use it specifically for:
+For backend work involving the database, always load and apply `supabase-postgres-best-practices` as a supporting skill before implementation details are finalized and use the skills.
 
+For tasks related to deploying the application to vercel user `deploy-to-vercel` and `vercel-cli-with-tokens` as supporting skills.
+
+Use appropriate skills specifically for:
+- Frontend work and optimization
 - Database schema design and migrations
 - Query design and performance/indexing decisions
 - Supabase auth and Postgres role/permission design
 - Row-Level Security (RLS) policy design and review
+- Tasks
 
 ## Default Stack
 
 - Framework: Next.js (App Router) + TypeScript
-- Styling: Tailwind CSS unless the repo uses another system
-- Data Fetching/Mutations: React Server Components (RSC) & Server Actions
+- Styling: Tailwind CSS for a new project, for existing application use the existing styling technology
 - External APIs/Webhooks: Next.js Route Handlers (`app/api`)
 - Database: PostgreSQL (Supabase) via Supabase JS Client or Prima ORM
 - Validation: Zod for end-to-end type safety
