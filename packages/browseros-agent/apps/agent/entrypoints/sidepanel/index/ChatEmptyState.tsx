@@ -6,12 +6,13 @@ import {
   CHAT_SUGGESTIONS,
   type ChatMode,
   CODING_SUGGESTIONS,
+  type Suggestion,
 } from './chatTypes'
 
 interface ChatEmptyStateProps {
   mode: ChatMode
   mounted: boolean
-  onSuggestionClick: (suggestion: string) => void
+  onSuggestionClick: (suggestion: Suggestion) => void
 }
 
 export const ChatEmptyState: FC<ChatEmptyStateProps> = ({
@@ -58,7 +59,7 @@ export const ChatEmptyState: FC<ChatEmptyStateProps> = ({
           <button
             type="button"
             key={suggestion.display}
-            onClick={() => onSuggestionClick(suggestion.prompt)}
+            onClick={() => onSuggestionClick(suggestion)}
             className="group flex items-center justify-between rounded-lg border border-border/50 bg-card px-3 py-2.5 text-left text-xs transition-all duration-200 hover:border-[var(--accent-orange)]/50 hover:bg-primary/5"
           >
             {suggestion.display}

@@ -1,13 +1,30 @@
 export type ChatMode = 'chat' | 'agent' | 'coding'
 
-export interface Suggestion {
+interface BaseSuggestion {
   display: string
-  prompt: string
   icon: string
 }
 
+export interface StaticSuggestion extends BaseSuggestion {
+  type: 'static'
+  prompt: string
+}
+
+export interface BuilderSuggestion extends BaseSuggestion {
+  type: 'builder'
+  dialogTitle: string
+  dialogDescription: string
+  inputPlaceholder: string
+  submitLabel: string
+  requiredInputError: string
+  promptTemplate: string
+}
+
+export type Suggestion = StaticSuggestion | BuilderSuggestion
+
 export const CHAT_SUGGESTIONS: Suggestion[] = [
   {
+    type: 'static',
     display: 'Summarize this page',
     prompt: 'Read the current tab and summarize it in bullet points',
     icon: '✨',
@@ -39,6 +56,7 @@ export const AGENT_SUGGESTIONS: Suggestion[] = [
   //   icon: '⭐',
   // },
   {
+    type: 'static',
     display: 'Open amazon.com and order a GPU for me',
     prompt: 'Navigate to amazon.com and add a GPU for me to my cart.',
     icon: '🛒',
@@ -47,24 +65,43 @@ export const AGENT_SUGGESTIONS: Suggestion[] = [
 
 export const CODING_SUGGESTIONS: Suggestion[] = [
   {
-    display: 'Build a personal productivity web app',
-    prompt:
-      'Build a modern, production-ready personal productivity SaaS web app (Notion quality) using React.js, Tailwind CSS. Include dashboard insights, task management (priority, due dates, drag-drop, completion), habits with streaks and heatmap, goals with milestones/progress, rich notes with tags/search, and a Pomodoro timer with session tracking; make it fully responsive, animated, dark/light mode, and Vercel zero-config deployable. Make sure to start the dev server and open/share the preview URL once the app is ready.',
+    type: 'builder',
+    display: 'Build a web application that does ...',
+    dialogTitle: 'Build a Web Application',
+    dialogDescription: 'Describe your specific product idea.',
+    inputPlaceholder:
+      'A productivity app for me to plan track habits, and become more productive.',
+    submitLabel: 'Generate',
+    requiredInputError: 'Describe your app idea first.',
+    promptTemplate: `Build a modern, production-ready SaaS web app tailored for this company/idea: {{input}}
+
+Requirements:
+- Use Next.js and Tailwind CSS.
+- Make it fully responsive, animated, and include dark/light mode.
+- Keep it Vercel zero-config deployable.
+- Start the dev server and open/share the preview URL once the app is ready.`,
     icon: '📊',
   },
   {
-    display: 'Build a landing page for Fouwser',
-    prompt: `
-      Act as a senior conversion copywriter and UX strategist. Create a high-converting landing page framework for my app-building, agentic, founder-friendly browser - Fouwser.
-      Our target audience is non-technical founders, small business owners, enterprise managers who struggle with high development costs, slow time-to-market, technical complexity.
-      Use React as the tech stack.
-      `,
+    type: 'builder',
+    display: 'Build a landing page for ...',
+    dialogTitle: 'Build a Landing Page',
+    dialogDescription:
+      'Describe your company or idea. This will be turned into a coding prompt.',
+    inputPlaceholder: 'A Browser build specifically for Founders - Fouwsers.',
+    submitLabel: 'Generate',
+    requiredInputError: 'Describe your company or idea first.',
+    promptTemplate: `Act as a senior conversion copywriter and UX strategist.
+
+Create a high-converting landing page for this company/idea:
+{{input}}
+
+Requirements:
+- Build with React and Tailwind CSS.
+- Include clear sections: hero, problem, solution, features, social proof, pricing/offer, FAQ, and CTA.
+- Write compelling copy targeted to the likely ICP for this business.
+- Make the design modern, responsive, and production-ready.
+- Start the dev server and open/share the preview URL when complete.`,
     icon: '🛠️',
   },
-  // {
-  //   display: 'Refactor safely',
-  //   prompt:
-  //     'Refactor the relevant code with minimal behavior change and run targeted checks',
-  //   icon: '🧩',
-  // },
 ]

@@ -1,6 +1,16 @@
 import { Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
 import { createBrowserOSAction } from '@/lib/chat-actions/types'
 import {
   SIDEPANEL_AI_TRIGGERED_EVENT,
@@ -18,7 +28,9 @@ import { ChatEmptyState } from './ChatEmptyState'
 import { ChatError } from './ChatError'
 import { ChatFooter } from './ChatFooter'
 import { ChatMessages } from './ChatMessages'
-import type { ChatMode } from './chatTypes'
+import type { BuilderSuggestion, ChatMode, Suggestion } from './chatTypes'
+
+const BUILDER_INPUT_TOKEN = '{{input}}'
 
 /**
  * @public
@@ -54,6 +66,10 @@ export const Chat = () => {
   const [input, setInput] = useState('')
   const [attachedTabs, setAttachedTabs] = useState<chrome.tabs.Tab[]>([])
   const [mounted, setMounted] = useState(false)
+  const [activeBuilder, setActiveBuilder] = useState<BuilderSuggestion | null>(
+    null,
+  )
+  const [builderInput, setBuilderInput] = useState('')
 
   useEffect(() => {
     setMounted(true)
@@ -149,9 +165,37 @@ export const Chat = () => {
     executeMessage()
   }
 
-  const handleSuggestionClick = (suggestion: string) => {
+  const closeBuilderDialog = () => {
+    setActiveBuilder(null)
+    setBuilderInput('')
+  }
+
+  const submitBuilderSuggestion = () => {
+    if (!activeBuilder) return
+    const details = builderInput.trim()
+    if (!details) {
+      toast.error(activeBuilder.requiredInputError)
+      return
+    }
+    const prompt = activeBuilder.promptTemplate.replace(
+      BUILDER_INPUT_TOKEN,
+      details,
+    )
+    closeBuilderDialog()
+    executeMessage(prompt)
+  }
+
+  const handleSuggestionClick = (suggestion: Suggestion) => {
     track(SIDEPANEL_SUGGESTION_CLICKED_EVENT, { mode })
-    executeMessage(suggestion)
+    if (suggestion.type === 'builder') {
+      if (mode === 'coding' && !selectedFolder) {
+        toast.error('Select a working directory to send coding requests.')
+        return
+      }
+      setActiveBuilder(suggestion)
+      return
+    }
+    executeMessage(suggestion.prompt)
   }
 
   return (
@@ -185,6 +229,40 @@ export const Chat = () => {
         {agentUrlError && <ChatError error={agentUrlError} />}
         {chatError && <ChatError error={chatError} />}
       </main>
+
+      <Dialog
+        open={activeBuilder !== null}
+        onOpenChange={(open) => {
+          if (!open) closeBuilderDialog()
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {activeBuilder?.dialogTitle ?? 'Build from prompt'}
+            </DialogTitle>
+            <DialogDescription>
+              {activeBuilder?.dialogDescription ??
+                'Provide details to generate the coding prompt.'}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            autoFocus
+            rows={5}
+            placeholder={activeBuilder?.inputPlaceholder}
+            value={builderInput}
+            onChange={(e) => setBuilderInput(e.target.value)}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={closeBuilderDialog}>
+              Cancel
+            </Button>
+            <Button onClick={submitBuilderSuggestion}>
+              {activeBuilder?.submitLabel ?? 'Generate & Send'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ChatFooter
         mode={mode}
