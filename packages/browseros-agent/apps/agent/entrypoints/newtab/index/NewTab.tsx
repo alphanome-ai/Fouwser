@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/tooltip'
 import { McpServerIcon } from '@/entrypoints/app/connect-mcp/McpServerIcon'
 import { useGetUserMCPIntegrations } from '@/entrypoints/app/connect-mcp/useGetUserMCPIntegrations'
+import type { ChatMode } from '@/entrypoints/sidepanel/index/chatTypes'
 import { useChatSessionContext } from '@/entrypoints/sidepanel/layout/ChatSessionContext'
 import { Feature } from '@/lib/browseros/capabilities'
 import { useCapabilities } from '@/lib/browseros/useCapabilities'
@@ -276,7 +277,7 @@ export const NewTab = () => {
 
   const startInlineChat = (
     message: string,
-    mode: 'chat' | 'agent',
+    mode: ChatMode,
     action?: ReturnType<
       typeof createBrowserOSAction | typeof createAITabAction
     >,
