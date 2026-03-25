@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { mkdir, readFile, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { PATHS } from '@browseros/shared/constants/paths'
 import { createBashTool } from '../../../src/tools/filesystem/bash'
 import type { FilesystemToolResult } from '../../../src/tools/filesystem/utils'
 
@@ -112,7 +113,11 @@ describe('filesystem_bash background mode', () => {
     expect(result.isError).toBeUndefined()
     const pid = extractPid(result.text)
     const procDir = extractRegistryPath(result.text)
+    const expectedProcDir = join(homedir(), PATHS.BROWSEROS_DIR_NAME, 'proc')
     const recordPath = join(procDir, `${pid}.json`)
+
+    expect(procDir).toBe(expectedProcDir)
+    expect(procDir.startsWith(resolve(tmpDir))).toBe(false)
 
     const rawRecord = await readFile(recordPath, 'utf-8')
     const record = JSON.parse(rawRecord) as {

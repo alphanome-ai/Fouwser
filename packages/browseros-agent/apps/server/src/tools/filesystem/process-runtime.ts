@@ -1,13 +1,8 @@
 import { mkdir, readdir, rm, stat } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { isAbsolute, join, relative, resolve } from 'node:path'
-import { PATHS } from '@browseros/shared/constants/paths'
+import { getBrowserosDir } from '../../lib/browseros-dir'
 
-export const PROCESS_RUNTIME_DIR = join(
-  homedir(),
-  PATHS.BROWSEROS_DIR_NAME,
-  'proc',
-)
+export const PROCESS_RUNTIME_DIR = join(getBrowserosDir(), 'proc')
 export const DEFAULT_BACKGROUND_MAX_RUNTIME_SECONDS = 30 * 60
 const PROCESS_RECORD_EXTENSION = '.json'
 const TERMINATION_GRACE_PERIOD_MS = 2_000
@@ -162,8 +157,8 @@ function getRecordPath(procDir: string, pid: number): string {
   return join(procDir, `${pid}${PROCESS_RECORD_EXTENSION}`)
 }
 
-export function getProcessRuntimeDir(toolCwd: string): string {
-  return resolve(toolCwd, PROCESS_RUNTIME_DIR)
+export function getProcessRuntimeDir(_toolCwd: string): string {
+  return PROCESS_RUNTIME_DIR
 }
 
 export async function ensureProcessRuntimeDir(
