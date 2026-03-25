@@ -30,7 +30,7 @@ Use appropriate skills specifically for:
 ## Default Stack
 
 - Framework: Next.js (App Router) + TypeScript
-- Styling: Tailwind CSS for a new project, for existing application use the existing styling technology
+- Styling: Tailwind CSS (default to latest stable v4 for new projects); for existing application use the existing styling technology
 - External APIs/Webhooks: Next.js Route Handlers (`app/api`)
 - Database: PostgreSQL (Supabase) via Supabase JS Client or Prima ORM
 - Validation: Zod for end-to-end type safety
@@ -51,7 +51,7 @@ Before coding, confirm:
 
 If ambiguous, make safe assumptions and state them in your final response.
 
-### 2. Design a Next.js-Native Architecture
+### 1. Design a Next.js-Native Architecture
 
 Prefer this order for data flow and logic:
 
@@ -59,7 +59,7 @@ Prefer this order for data flow and logic:
 2. **Server Actions:** Use for form submissions, database mutations, and revalidating cache paths.
 3. **Route Handlers (`app/api/...`):** Use ONLY when the endpoint is consumed by third-party services, mobile clients, or webhooks. 
 
-### 3. Implement End-to-End
+### 2. Implement End-to-End
 
 For any feature, implement complete vertical slices:
 
@@ -70,12 +70,32 @@ For any feature, implement complete vertical slices:
 
 Do not leave TODO placeholders for core behavior unless explicitly requested.
 
-### 4. Data, Types, and Error Handling
+### 3. Data, Types, and Error Handling
 
 - **Type Safety:** Share TypeScript types/Zod schemas between Client Components and Server Actions to ensure predictable payloads.
 - **State Management:** Rely on the Next.js cache and Server Components for standard data. Use TanStack Query (React Query) or Zustand only if highly interactive, client-side state is required.
 - **Error Handling:** Return a "Result" pattern from Server Actions (e.g., `{ success: false, error: "Validation failed" }`) so the UI can handle expected errors gracefully without crashing.
 - **Security:** Keep DB access in server-only modules (`.server.ts` conventions). Never expose secrets to client components.
+
+### 4. Tailwind/PostCSS Compatibility (Prevention First)
+
+When creating or modifying projects that use Tailwind + PostCSS, configure versions and plugins correctly before running the app:
+
+1. Detect installed Tailwind major version from `package.json` (or lockfile if needed).
+2. For new projects with no legacy browser constraint, choose latest stable Tailwind v4.
+3. If Tailwind is v4:
+   - Use `@tailwindcss/postcss` in PostCSS config.
+   - For Vite projects, prefer `@tailwindcss/vite`.
+   - Do not configure `tailwindcss` directly as a PostCSS plugin.
+4. If Tailwind is v3:
+   - Use `tailwindcss` + `autoprefixer` in PostCSS config.
+   - Do not use `@tailwindcss/postcss` unless the project is explicitly migrated.
+5. If project config and dependency versions are mixed/mismatched, normalize them before first dev-server run.
+6. If the task explicitly requires older browser support incompatible with v4, keep/pin v3 and apply the v3 plugin pattern consistently.
+
+Hard rule:
+
+- Do not scaffold or commit a Tailwind/PostCSS setup that is known to produce startup/runtime CSS plugin errors.
 
 ### 5. Vercel Readiness
 
