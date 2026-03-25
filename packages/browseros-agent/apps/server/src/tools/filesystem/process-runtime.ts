@@ -9,6 +9,7 @@ const TERMINATION_GRACE_PERIOD_MS = 2_000
 
 interface ManagedProcessRecord {
   pid: number
+  port?: number
   command: string
   cwd: string
   logPath: string
@@ -26,6 +27,18 @@ export interface ManagedBackgroundProcess {
   activeCount: number
 }
 
+export interface ManagedProcessInfo {
+  pid: number
+  port?: number
+  command: string
+  cwd: string
+  logPath: string
+  toolName: string
+  startedAtMs: number
+  expiresAtMs: number
+  remainingMs: number
+}
+
 interface StartManagedBackgroundProcessParams {
   shell: string
   flag: string
@@ -35,6 +48,10 @@ interface StartManagedBackgroundProcessParams {
   logFile?: string
   toolName: string
   maxRuntimeSeconds: number
+}
+
+interface ManagedRecordEntry extends ManagedProcessRecord {
+  recordPath: string
 }
 
 function quoteForShell(value: string): string {
@@ -122,6 +139,132 @@ function parseRecordFileName(name: string): number | null {
   return pid
 }
 
+function parsePortFromCommand(command: string): number | undefined {
+  const match = command.match(/--port(?:=|\s+)(\d{1,5})\b/i)
+  if (!match?.[1]) return undefined
+
+  const port = Number.parseInt(match[1], 10)
+  if (!Number.isFinite(port) || port < 1 || port > 65_535) return undefined
+  return port
+}
+
+function parsePidLines(text: string): number[] {
+  const pids = new Set<number>()
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim()
+    if (!line) continue
+    const pid = Number.parseInt(line, 10)
+    if (Number.isFinite(pid) && pid > 0) {
+      pids.add(pid)
+    }
+  }
+  return [...pids]
+}
+
+async function findListeningPidsByPortUnix(port: number): Promise<number[]> {
+  try {
+    const proc = Bun.spawn(
+      ['lsof', '-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-t'],
+      {
+        stdout: 'pipe',
+        stderr: 'pipe',
+        env: { ...process.env },
+      },
+    )
+    const stdoutText = await new Response(proc.stdout).text()
+    await proc.exited
+    return parsePidLines(stdoutText)
+  } catch {
+    return []
+  }
+}
+
+function parseWindowsNetstatPidsByPort(output: string, port: number): number[] {
+  const pids = new Set<number>()
+  for (const rawLine of output.split('\n')) {
+    const line = rawLine.trim()
+    if (!line) continue
+
+    const parts = line.split(/\s+/)
+    if (parts.length < 5) continue
+    if (parts[0].toUpperCase() !== 'TCP') continue
+    if (parts[3].toUpperCase() !== 'LISTENING') continue
+
+    const localAddress = parts[1]
+    const pidText = parts[4]
+    const lastColonIndex = localAddress.lastIndexOf(':')
+    if (lastColonIndex < 0) continue
+
+    const localPort = Number.parseInt(
+      localAddress.slice(lastColonIndex + 1),
+      10,
+    )
+    const pid = Number.parseInt(pidText, 10)
+    if (localPort !== port || !Number.isFinite(pid) || pid <= 0) continue
+    pids.add(pid)
+  }
+  return [...pids]
+}
+
+async function findListeningPidsByPortWindows(port: number): Promise<number[]> {
+  try {
+    const proc = Bun.spawn(['netstat', '-ano', '-p', 'tcp'], {
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: { ...process.env },
+    })
+    const stdoutText = await new Response(proc.stdout).text()
+    await proc.exited
+    return parseWindowsNetstatPidsByPort(stdoutText, port)
+  } catch {
+    return []
+  }
+}
+
+async function findListeningPidsByPort(port: number): Promise<number[]> {
+  if (!Number.isFinite(port) || port < 1 || port > 65_535) return []
+  if (process.platform === 'win32') {
+    return findListeningPidsByPortWindows(port)
+  }
+  return findListeningPidsByPortUnix(port)
+}
+
+function getRecordPort(record: ManagedProcessRecord): number | undefined {
+  return record.port ?? parsePortFromCommand(record.command)
+}
+
+async function getRecordCandidatePids(
+  record: ManagedProcessRecord,
+): Promise<number[]> {
+  const pids = new Set<number>()
+  if (Number.isFinite(record.pid) && record.pid > 0) {
+    pids.add(record.pid)
+  }
+
+  const port = getRecordPort(record)
+  if (port !== undefined) {
+    const portPids = await findListeningPidsByPort(port)
+    for (const pid of portPids) {
+      pids.add(pid)
+    }
+  }
+
+  return [...pids]
+}
+
+async function getRecordActivePids(
+  record: ManagedProcessRecord,
+): Promise<number[]> {
+  const candidates = await getRecordCandidatePids(record)
+  const activePids: number[] = []
+  for (const pid of candidates) {
+    if (await isProcessRunning(pid)) {
+      activePids.push(pid)
+    }
+  }
+  return activePids
+}
+
 async function readRecord(
   recordPath: string,
 ): Promise<ManagedProcessRecord | null> {
@@ -130,6 +273,11 @@ async function readRecord(
     const parsed = JSON.parse(raw) as Partial<ManagedProcessRecord>
     if (
       typeof parsed.pid !== 'number' ||
+      (parsed.port !== undefined &&
+        (typeof parsed.port !== 'number' ||
+          !Number.isFinite(parsed.port) ||
+          parsed.port < 1 ||
+          parsed.port > 65_535)) ||
       typeof parsed.command !== 'string' ||
       typeof parsed.cwd !== 'string' ||
       typeof parsed.logPath !== 'string' ||
@@ -141,6 +289,7 @@ async function readRecord(
     }
     return {
       pid: parsed.pid,
+      port: parsed.port,
       command: parsed.command,
       cwd: parsed.cwd,
       logPath: parsed.logPath,
@@ -151,6 +300,41 @@ async function readRecord(
   } catch {
     return null
   }
+}
+
+async function collectValidManagedRecords(
+  procDir: string,
+): Promise<{ records: ManagedRecordEntry[]; removedCount: number }> {
+  let entries: string[] = []
+  try {
+    entries = await readdir(procDir)
+  } catch {
+    return { records: [], removedCount: 0 }
+  }
+
+  let removedCount = 0
+  const records: ManagedRecordEntry[] = []
+  for (const entry of entries) {
+    const pid = parseRecordFileName(entry)
+    const recordPath = join(procDir, entry)
+    if (!pid) {
+      removedCount++
+      await rm(recordPath, { force: true }).catch(() => {})
+      continue
+    }
+
+    const record = await readRecord(recordPath)
+    if (!record || record.pid !== pid) {
+      removedCount++
+      await rm(recordPath, { force: true }).catch(() => {})
+      continue
+    }
+
+    records.push({ ...record, recordPath })
+  }
+
+  records.sort((a, b) => b.startedAtMs - a.startedAtMs)
+  return { records, removedCount }
 }
 
 function getRecordPath(procDir: string, pid: number): string {
@@ -206,17 +390,24 @@ export async function cleanupExpiredBackgroundProcesses(
       continue
     }
 
-    const isRunning = await isProcessRunning(pid)
-    if (!isRunning) {
+    const activePids = await getRecordActivePids(record)
+    if (activePids.length === 0) {
       removedCount++
       await rm(recordPath, { force: true }).catch(() => {})
       continue
     }
 
     if (record.expiresAtMs <= now) {
-      await terminateProcess(pid)
-      removedCount++
-      await rm(recordPath, { force: true }).catch(() => {})
+      for (const activePid of activePids) {
+        await terminateProcess(activePid)
+      }
+      const remainingPids = await getRecordActivePids(record)
+      if (remainingPids.length === 0) {
+        removedCount++
+        await rm(recordPath, { force: true }).catch(() => {})
+      } else {
+        activeCount++
+      }
       continue
     }
 
@@ -233,9 +424,140 @@ export async function runProcessRuntimeMaintenance(
   return cleanupExpiredBackgroundProcesses(toolCwd)
 }
 
+export async function listManagedBackgroundProcesses(toolCwd: string): Promise<{
+  procDir: string
+  activeCount: number
+  removedCount: number
+  processes: ManagedProcessInfo[]
+}> {
+  const maintenance = await runProcessRuntimeMaintenance(toolCwd)
+  const { records, removedCount: invalidRemoved } =
+    await collectValidManagedRecords(maintenance.procDir)
+
+  let removedCount = maintenance.removedCount + invalidRemoved
+  const now = Date.now()
+  const processes: ManagedProcessInfo[] = []
+
+  for (const record of records) {
+    const activePids = await getRecordActivePids(record)
+    if (activePids.length === 0) {
+      removedCount++
+      await rm(record.recordPath, { force: true }).catch(() => {})
+      continue
+    }
+    processes.push({
+      pid: record.pid,
+      port: record.port,
+      command: record.command,
+      cwd: record.cwd,
+      logPath: record.logPath,
+      toolName: record.toolName,
+      startedAtMs: record.startedAtMs,
+      expiresAtMs: record.expiresAtMs,
+      remainingMs: Math.max(0, record.expiresAtMs - now),
+    })
+  }
+
+  return {
+    procDir: maintenance.procDir,
+    activeCount: processes.length,
+    removedCount,
+    processes,
+  }
+}
+
+export async function killManagedBackgroundProcess(params: {
+  toolCwd: string
+  pid: number
+}): Promise<{
+  procDir: string
+  recordFound: boolean
+  wasRunning: boolean
+  killed: boolean
+}> {
+  const procDir = await ensureProcessRuntimeDir(params.toolCwd)
+  const recordPath = getRecordPath(procDir, params.pid)
+  const record = await readRecord(recordPath)
+  if (!record) {
+    return {
+      procDir,
+      recordFound: false,
+      wasRunning: false,
+      killed: false,
+    }
+  }
+
+  const activePids = await getRecordActivePids(record)
+  const wasRunning = activePids.length > 0
+
+  for (const pid of activePids) {
+    await terminateProcess(pid)
+  }
+  const remainingPids = await getRecordActivePids(record)
+  const killed = remainingPids.length === 0
+  if (killed) {
+    await rm(recordPath, { force: true }).catch(() => {})
+  }
+
+  return {
+    procDir,
+    recordFound: true,
+    wasRunning,
+    killed,
+  }
+}
+
+export async function killManagedBackgroundProcesses(params: {
+  toolCwd: string
+  toolName?: string
+  cwd?: string
+  commandContains?: string
+}): Promise<{
+  procDir: string
+  matched: number
+  killed: number
+  failed: number
+  remainingActive: number
+}> {
+  const listed = await listManagedBackgroundProcesses(params.toolCwd)
+  const commandFilter = params.commandContains?.trim().toLowerCase()
+  const filtered = listed.processes.filter((process) => {
+    if (params.toolName && process.toolName !== params.toolName) return false
+    if (params.cwd && process.cwd !== params.cwd) return false
+    if (
+      commandFilter &&
+      !process.command.toLowerCase().includes(commandFilter)
+    ) {
+      return false
+    }
+    return true
+  })
+
+  let killed = 0
+  let failed = 0
+  for (const process of filtered) {
+    const result = await killManagedBackgroundProcess({
+      toolCwd: params.toolCwd,
+      pid: process.pid,
+    })
+    if (result.killed) killed++
+    else failed++
+  }
+
+  const remaining = await listManagedBackgroundProcesses(params.toolCwd)
+  return {
+    procDir: listed.procDir,
+    matched: filtered.length,
+    killed,
+    failed,
+    remainingActive: remaining.activeCount,
+  }
+}
+
 export async function registerBackgroundProcess(params: {
   toolCwd: string
   pid: number
+  port?: number
   command: string
   commandCwd: string
   logPath: string
@@ -249,6 +571,7 @@ export async function registerBackgroundProcess(params: {
 
   const record: ManagedProcessRecord = {
     pid: params.pid,
+    port: params.port ?? parsePortFromCommand(params.command),
     command: params.command,
     cwd: params.commandCwd,
     logPath: params.logPath,

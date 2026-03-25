@@ -5,6 +5,7 @@ import type { Browser } from '../../browser/browser'
 import {
   DEFAULT_BACKGROUND_MAX_RUNTIME_SECONDS,
   ensureProcessRuntimeDir,
+  killManagedBackgroundProcesses,
   registerBackgroundProcess,
   removeBackgroundProcessRecord,
   runProcessRuntimeMaintenance,
@@ -160,6 +161,18 @@ async function waitForWebUiUrl(
 
 async function startVsCodeWebServer(): Promise<VsCodeWebServerState> {
   await runProcessRuntimeMaintenance(PROCESS_RUNTIME_ROOT)
+  const orphanCleanup = await killManagedBackgroundProcesses({
+    toolCwd: PROCESS_RUNTIME_ROOT,
+    toolName: VSCODE_WEB_TOOL_NAME,
+  })
+  if (orphanCleanup.matched > 0) {
+    logger.info('Cleaned up orphaned VS Code Web managed processes', {
+      matched: orphanCleanup.matched,
+      killed: orphanCleanup.killed,
+      failed: orphanCleanup.failed,
+      remainingActive: orphanCleanup.remainingActive,
+    })
+  }
   const port = await findAvailablePort('127.0.0.1')
   const procDir = await ensureProcessRuntimeDir(PROCESS_RUNTIME_ROOT)
   const logPath = join(procDir, `vscode-web-${Date.now()}-${port}.log`)
@@ -183,6 +196,7 @@ async function startVsCodeWebServer(): Promise<VsCodeWebServerState> {
       const registration = await registerBackgroundProcess({
         toolCwd: PROCESS_RUNTIME_ROOT,
         pid,
+        port,
         command: `code serve-web --host=127.0.0.1 --port=${port}`,
         commandCwd: PROCESS_RUNTIME_ROOT,
         logPath,

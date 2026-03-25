@@ -5,6 +5,7 @@ import { createEditTool } from './edit'
 import { createFindTool } from './find'
 import { createGrepTool } from './grep'
 import { createLsTool } from './ls'
+import { createProcessManagerTool } from './process-manager'
 import { createReadTool } from './read'
 import { createWriteTool } from './write'
 
@@ -18,5 +19,6 @@ export function buildFilesystemToolSet(cwd: string): ToolSet {
     filesystem_grep: createGrepTool(cwd),
     filesystem_find: createFindTool(cwd),
     filesystem_ls: createLsTool(cwd),
+    filesystem_process_manager: createProcessManagerTool(cwd),
   }
 }
