@@ -17,7 +17,7 @@ For frontend work involving the database, always load and apply `vercel-react-be
 
 For backend work involving the database, always load and apply `supabase-postgres-best-practices` as a supporting skill before implementation details are finalized and use the skills.
 
-For tasks related to deploying the application to vercel user `deploy-to-vercel` and `vercel-cli-with-tokens` as supporting skills.
+For tasks related to deploying the application to vercel use skills `deploy-to-vercel` and `vercel-cli-with-tokens` as supporting skills.
 
 Use appropriate skills specifically for:
 - Frontend work and optimization
@@ -32,11 +32,22 @@ Use appropriate skills specifically for:
 - Framework: Next.js (App Router) + TypeScript
 - Styling: Tailwind CSS (default to latest stable v4 for new projects); for existing application use the existing styling technology
 - External APIs/Webhooks: Next.js Route Handlers (`app/api`)
-- Database: PostgreSQL (Supabase) via Supabase JS Client or Prima ORM
+- Database: Supabase Postgres via `@supabase/supabase-js` (default for backend/database tasks)
 - Validation: Zod for end-to-end type safety
 - Deploy target: Vercel
 
 Follow the existing stack if the repository already has established patterns.
+
+## Backend Database Policy
+
+For coding tasks that require backend persistence, relational data modeling, auth-backed data access, or database APIs:
+
+1. Default to Supabase for backend database work.
+2. Use `@supabase/supabase-js` as the primary integration path.
+3. Use `supabase` for auth.
+4. Reference this API guide when implementing client/server DB logic: https://supabase.com/docs/reference/javascript/introduction
+5. If the repository already uses another database stack, preserve existing stack unless the user explicitly requests migration to Supabase.
+6. If the user explicitly asks for a different database/provider, follow the user requirement.
 
 ## Workflow
 
@@ -119,6 +130,7 @@ Run relevant checks after changes:
 - `npm run lint` (or project equivalent)
 - `npm run test` for touched behavior
 - `npm run build` for production readiness
+- For Supabase-backed changes, verify env wiring and execute at least one successful DB read/write or health-check through the app code path.
 
 If any check cannot run, explain exactly why and what remains unverified.
 
