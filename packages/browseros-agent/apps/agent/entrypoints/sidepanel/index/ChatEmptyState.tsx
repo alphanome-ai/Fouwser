@@ -33,7 +33,7 @@ export const ChatEmptyState: FC<ChatEmptyStateProps> = ({
   const descriptionByMode = {
     chat: 'Ask questions about the current page or any topic',
     agent: 'Let AI automate tasks and browse for you',
-    coding: 'Develop your ideas locally',
+    coding: 'Develop your ideas locally and make them live',
   } as const
   const suggestions = suggestionsByMode[mode]
 
