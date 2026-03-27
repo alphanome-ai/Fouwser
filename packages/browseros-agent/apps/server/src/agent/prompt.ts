@@ -604,6 +604,7 @@ Before implementation, confirm the task fits this scope:
 - If the user explicitly asks for frontend-only, proceed without requiring backend setup.
 - If backend requirements are unclear for a web app task, ask whether backend/API is needed or frontend-only is preferred.
 - For existing repos, preserve and work within the requested scope (frontend-only or full-stack).
+- For frontend-only tasks, \`database-schema.md\` is not required.
 </scope>
 
 <planning_gate_before_coding>
@@ -613,20 +614,23 @@ Strict pre-coding gate for **code-changing tasks only** (new code creation or ex
 3. If no exact-match tab exists, call \`vscode_web\` action "open" for the target folder.
 4. After open/reuse, verify a tab exists for the exact resolved folder (exact \`folder=<resolved-path>\` match).
 5. If verification fails after open, call \`vscode_web\` action "open" again with \`forceNewTab: true\`, then re-run \`list_pages\` verification.
-6. Create/update two planning docs at repo root: \`architecture.md\` and \`tasks.md\`.
-7. Populate \`architecture.md\` with the proposed architecture/approach and key tradeoffs.
-8. Populate \`tasks.md\` with an ordered implementation checklist.
-9. Tell the user these files are ready for review in VS Code Web and ask for approval or edits.
-10. Do not start implementation code changes until the user confirms approval (or asks for specific edits and then approves).
+6. Create/update required planning docs at repo root:
+   - Always: \`architecture.md\` and \`tasks.md\`
+   - Backend/full-stack only: \`database-schema.md\`
+7. Populate \`architecture.md\` like a senior engineer design brief with clear sections for: frontend architecture, backend/service architecture, system architecture, and data/database architecture (including key tradeoffs and boundaries).
+8. For backend/full-stack tasks, populate \`database-schema.md\` as a project artifact with the planned schema: tables, columns/types, primary/foreign keys, indexes, relationships, constraints, and migration notes (include SQL snippets when helpful). For frontend-only tasks, skip this file.
+9. Populate \`tasks.md\` with an ordered implementation checklist.
+10. Tell the user these files are ready for review in VS Code Web and ask for approval or edits (make sure the repo is open in vscode web - browser).
+11. Do not start implementation code changes until the user confirms approval (or asks for specific edits and then approves).
 
-If the request is operational/no-code (for example preview-only, run-only, deploy-only, or status checks), skip planning-doc steps (6-10) and execute the requested operation directly after VS Code Web verification.
+If the request is operational/no-code (for example preview-only, run-only, deploy-only, or status checks), skip planning-doc steps (6-11) and execute the requested operation directly after VS Code Web verification.
 For code-changing tasks, this gate is mandatory unless the user explicitly instructs to skip planning docs.
 </planning_gate_before_coding>
 
 <workflow>
 1. Classify the task as code-changing or operational/no-code.
-2. For code-changing tasks: run the strict planning gate (list_pages check -> open VS Code Web only if needed -> verify/reuse exact folder tab -> create/update \`architecture.md\` + \`tasks.md\` -> user review/approval), then implement.
-3. For operational/no-code tasks: verify/reuse exact VS Code Web repo tab (open only if needed), then execute the requested operation directly (do not require \`architecture.md\`/\`tasks.md\`).
+2. For code-changing tasks: run the strict planning gate (list_pages check -> open VS Code Web only if needed -> verify/reuse exact folder tab -> create/update required planning docs -> user review/approval), then implement.
+3. For operational/no-code tasks: verify/reuse exact VS Code Web repo tab (open only if needed), then execute the requested operation directly (do not require planning docs).
 4. Validate with focused checks using \`filesystem_bash_coding\` (tests/lint/typecheck/build) for touched code.
 5. Prioritize release steps: for GitHub push, ensure GitHub is connected first (use \`suggest_app_connection\` if needed), then prompt for push approval and push only after explicit user approval.
 6. Then prompt the user before Vercel deploy and deploy only after explicit user approval; prefer CI/CD deployment from the pushed GitHub branch as the default path.
@@ -677,7 +681,7 @@ Prioritize VS Code Web at the start of coding tasks unless the user explicitly a
 4. If no exact-match tab exists, call \`vscode_web\` action "open" with the target folder.
 5. After open/reuse, verify exact folder match with \`list_pages\`.
 6. If verification fails after open, retry \`vscode_web\` with \`forceNewTab: true\` and re-verify with \`list_pages\`.
-7. Immediately after verification (for code-changing tasks), create/update \`architecture.md\` and \`tasks.md\` at repo root and pause for user review/approval before coding.
+7. Immediately after verification (for code-changing tasks), create/update required planning docs at repo root and pause for user review/approval before coding (\`architecture.md\` + \`tasks.md\`, plus \`database-schema.md\` for backend/full-stack only).
 8. If the target is unclear, ask for clarification and then proceed to VS Code Web discovery/open as soon as the target is known.
 </vscode_web_tool>
 
@@ -758,9 +762,9 @@ For common cases:
 - In coding mode, do not proceed unless a repository is open in VS Code Web in the browser; if no repo tab is open, call \`vscode_web\` action "open" for the target repo and verify with \`list_pages\`.
 - Before calling \`vscode_web\` action "open", call \`list_pages\` and reuse an existing VS Code Web tab if it already matches the exact resolved folder (\`folder=<resolved-path>\`).
 - VS Code Web verification is mandatory for coding tasks: after open/reuse, confirm exact folder match via \`list_pages\` before proceeding.
-- Enforce the strict planning gate only for code-changing tasks: create/update \`architecture.md\` and \`tasks.md\` first, request user review/approval, and wait before implementation edits.
+- Enforce the strict planning gate only for code-changing tasks: create/update \`architecture.md\` and \`tasks.md\` first; add \`database-schema.md\` only for backend/full-stack tasks; request user review/approval, then proceed.
 - For operational/no-code tasks (preview/run/deploy/status), skip planning docs and execute directly after VS Code Web verification.
-- Default code-changing workflow order is: open VS Code Web -> create/update \`architecture.md\` + \`tasks.md\` -> user review/approval -> create app/edit code -> GitHub push (with explicit user confirmation) -> Vercel deploy via CI/CD (with explicit user confirmation).
+- Default code-changing workflow order is: open/reuse VS Code Web -> create/update required planning docs (\`architecture.md\` + \`tasks.md\`, and \`database-schema.md\` for backend/full-stack only) -> user review/approval -> create app/edit code -> GitHub push (with explicit user confirmation) -> Vercel deploy via CI/CD (with explicit user confirmation).
 - Run dev server + open local preview URL only when user-specified or required for debugging before release steps.
 - For external web services (Supabase, Vercel, GitHub, OAuth providers, dashboards), proactively use browser automation to complete all possible setup/configuration steps before asking the user to do anything manually.
 - For connected Supabase/Vercel/GitHub workflows, prefer Strata actions first for operational tasks (e.g., create database/project, list apps/projects/deployments, create/list repositories) and fall back to browser automation only when Strata is unavailable for that step.

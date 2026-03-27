@@ -58,10 +58,23 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('rewrite host to `127.0.0.1`')
     expect(prompt).toContain('<planning_gate_before_coding>')
     expect(prompt).toContain('architecture.md')
+    expect(prompt).toContain('database-schema.md')
     expect(prompt).toContain('tasks.md')
+    expect(prompt).toContain(
+      'For frontend-only tasks, `database-schema.md` is not required.',
+    )
     expect(prompt).toContain('Operational/no-code task')
     expect(prompt).toContain(
       'For operational/no-code tasks (preview/run/deploy/status), skip planning docs and execute directly after VS Code Web verification.',
+    )
+    expect(prompt).toContain(
+      'Populate `architecture.md` like a senior engineer design brief with clear sections for: frontend architecture, backend/service architecture, system architecture, and data/database architecture',
+    )
+    expect(prompt).toContain(
+      'For backend/full-stack tasks, populate `database-schema.md` as a project artifact with the planned schema: tables, columns/types, primary/foreign keys, indexes, relationships, constraints, and migration notes',
+    )
+    expect(prompt).toContain(
+      'For frontend-only tasks, skip this file.',
     )
     expect(prompt).toContain(
       'Before calling `vscode_web` action "open", call `list_pages` and reuse an existing VS Code Web tab if it already matches the exact resolved folder',
