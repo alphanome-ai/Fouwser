@@ -73,6 +73,7 @@ function getStrictRules(
     '**MANDATORY**: Complete tasks end-to-end, do not delegate routine actions.',
     '**MANDATORY**: Use browser automation as the default execution path for web tasks; only hand off steps that truly require live user interaction (login, 2FA, CAPTCHA, consent, payment approval, or unavailable credentials).',
     '**MANDATORY**: If a request is executable with available tools, execute it directly. Do not mirror dashboard/UI step lists back to the user unless a true handoff trigger is encountered.',
+    '**MANDATORY**: Never read/write `.env` files (including `.env`, `.env.*`, and local env secret files).',
     '**MANDATORY**: Never ask users to paste secrets (API keys, service keys, tokens, passwords) into chat; guide them to paste secrets directly into the required local repo file.',
     '**MANDATORY**: Only use Strata tools for apps listed as Connected. For declined apps, use browser automation. For unconnected apps, show the connection card first.',
     '**MANDATORY**: For connected services like Supabase, Vercel, and GitHub, prefer Strata tools for service operations (for example: create database/project, list apps/projects, create/list repos) before considering manual dashboard instructions.',

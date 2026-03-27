@@ -18,6 +18,9 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain(
       'When the user provides a checklist of UI steps, treat it as execution instructions for you to perform',
     )
+    expect(prompt).toContain(
+      'Never read `.env` files (including `.env`, `.env.*`, and local env secret files).',
+    )
   })
 
   it('enforces integration-first execution for connected apps', () => {
