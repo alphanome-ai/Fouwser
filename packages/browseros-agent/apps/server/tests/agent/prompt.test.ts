@@ -67,6 +67,9 @@ describe('buildSystemPrompt', () => {
       'Before calling `vscode_web` action "open", call `list_pages` and reuse an existing VS Code Web tab if it already matches the exact resolved folder',
     )
     expect(prompt).toContain(
+      'In coding mode, do not proceed unless a repository is open in VS Code Web in the browser',
+    )
+    expect(prompt).toContain(
       'If an existing VS Code Web tab already points to the exact same resolved folder',
     )
     expect(prompt).toContain(

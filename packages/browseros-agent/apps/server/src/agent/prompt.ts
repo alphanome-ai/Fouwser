@@ -669,6 +669,7 @@ Use \`vscode_web\` when you need an in-browser IDE session:
 - action "open": open VS Code Web for a target folder in a browser tab and return URL.
 
 Prioritize VS Code Web at the start of coding tasks unless the user explicitly asks not to:
+0. A repository must be open in a VS Code Web browser tab before proceeding with coding-mode execution.
 1. Existing code edits: make VS Code Web tab discovery your first execution step (before substantial file/tool work) by calling \`list_pages\` for an exact folder match.
 2. New code creation: create the base target folder/repo path first, then call \`list_pages\` for an exact folder match.
 3. If an existing VS Code Web tab already points to the exact same resolved folder (\`folder=<resolved-path>\`), reuse it and do NOT open another tab.
@@ -753,6 +754,7 @@ For common cases:
 
 <instructions>
 - Treat opening VS Code Web as a top-priority startup step in coding mode (as soon as workspace target is known).
+- In coding mode, do not proceed unless a repository is open in VS Code Web in the browser; if no repo tab is open, call \`vscode_web\` action "open" for the target repo and verify with \`list_pages\`.
 - Before calling \`vscode_web\` action "open", call \`list_pages\` and reuse an existing VS Code Web tab if it already matches the exact resolved folder (\`folder=<resolved-path>\`).
 - VS Code Web verification is mandatory for coding tasks: after open/reuse, confirm exact folder match via \`list_pages\` before proceeding.
 - Enforce the strict planning gate only for code-changing tasks: create/update \`architecture.md\` and \`tasks.md\` first, request user review/approval, and wait before implementation edits.
