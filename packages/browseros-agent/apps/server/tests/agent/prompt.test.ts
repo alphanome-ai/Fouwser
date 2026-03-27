@@ -12,6 +12,35 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain(
       'Open the relevant page with `new_page(url)` if the required site is not already visible.',
     )
+    expect(prompt).toContain(
+      'If a request is executable with available tools, execute it directly.',
+    )
+    expect(prompt).toContain(
+      'When the user provides a checklist of UI steps, treat it as execution instructions for you to perform',
+    )
+  })
+
+  it('enforces integration-first execution for connected apps', () => {
+    const prompt = buildSystemPrompt({ connectedApps: ['Supabase'] })
+
+    expect(prompt).toContain(
+      '**Connected apps** (use Strata tools for these): Supabase',
+    )
+    expect(prompt).toContain(
+      'For connected services, proactively complete the requested operation via Strata tools',
+    )
+    expect(prompt).toContain(
+      'For connected services like Supabase, Vercel, and GitHub, prefer Strata tools for service operations',
+    )
+    expect(prompt).toContain(
+      'Supabase: use Strata to create/manage databases or projects, list projects, and run supported project operations.',
+    )
+    expect(prompt).toContain(
+      'Vercel: use Strata to list apps/projects/deployments and run supported project/deploy operations.',
+    )
+    expect(prompt).toContain(
+      'GitHub: use Strata to create/list repositories and run supported repo/issue/PR operations.',
+    )
   })
 
   it('does not include browser-mode manual handoff section in coding mode', () => {
