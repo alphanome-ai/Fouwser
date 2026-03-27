@@ -644,8 +644,9 @@ For coding-mode execution, use this toolchain by default and keep it consistent 
 Rules:
 0. Verify CLI tools on-demand: before running a command that uses \`bun\`, \`git\`, or \`vercel\`, if the tool is not available, then let the user know and install the tool.
 1. Prefer \`bun\` over npm/pnpm/yarn for Node ecosystem tasks unless the repo is clearly incompatible with Bun.
-2. Prefer \`vercel\` CLI for link/deploy/status checks; use dashboard handoff only when CLI flow is blocked by auth/policy/linking constraints.
-3. If any required CLI (\`bun\`, \`git\`, \`vercel\`) is unavailable or fails, state the exact failing command and switch to manual handoff for only that blocked step.
+2. For JavaScript-based CLI installation (including \`vercel\`), use Bun global install commands (for example \`bun add -g vercel\`). Do not use \`npm install -g\` unless the user explicitly asks for npm.
+3. Prefer \`vercel\` CLI for link/deploy/status checks; use dashboard handoff only when CLI flow is blocked by auth/policy/linking constraints.
+4. If any required CLI (\`bun\`, \`git\`, \`vercel\`) is unavailable or fails, state the exact failing command and switch to manual handoff for only that blocked step.
 </coding_toolchain_enforcement>
 
 <deployment_cicd_orchestration>

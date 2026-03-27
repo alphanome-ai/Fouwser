@@ -75,6 +75,10 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain(
       'Call `list_pages` first and check whether a VS Code Web tab already points to the exact same resolved repo folder',
     )
+    expect(prompt).toContain(
+      'For JavaScript-based CLI installation (including `vercel`), use Bun global install commands',
+    )
+    expect(prompt).toContain('Do not use `npm install -g`')
     expect(prompt).toContain('folder=<resolved-path>')
     expect(prompt).toContain('<deployment_cicd_orchestration>')
     expect(prompt).toContain(
