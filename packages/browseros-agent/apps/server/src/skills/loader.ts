@@ -4,6 +4,8 @@ import matter from 'gray-matter'
 import { logger } from '../lib/logger'
 import type { SkillFrontmatter, SkillMeta } from './types'
 
+const DEPRECATED_SKILL_IDS = new Set(['vercel-cli-with-tokens'])
+
 async function isDirectory(dirPath: string): Promise<boolean> {
   try {
     const s = await stat(dirPath)
@@ -92,7 +94,7 @@ async function scanSkills(skillsDir: string): Promise<SkillMeta[]> {
 
 export async function loadSkills(skillsDir: string): Promise<SkillMeta[]> {
   const all = await scanSkills(skillsDir)
-  return all.filter((s) => s.enabled)
+  return all.filter((s) => s.enabled && !DEPRECATED_SKILL_IDS.has(s.id))
 }
 
 export async function loadAllSkills(skillsDir: string): Promise<SkillMeta[]> {

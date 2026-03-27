@@ -492,7 +492,7 @@ function getPageContext(
   }
 
   prompt +=
-    '\n\n**CRITICAL RULES:**\n1. **Do NOT call `get_active_page` or `list_pages` to find your starting page.** Use the **page ID from the Browser Context** directly.'
+    '\n\n**CRITICAL RULES:**\n1. **Do NOT call `get_active_page` or `list_pages` to find your starting page.** Use the **page ID from the Browser Context** directly. **Exception:** in coding mode, calling `list_pages` is allowed and required immediately after `vscode_web` open to verify the VS Code Web tab.'
 
   if (options?.isScheduledTask) {
     const windowRef = options.scheduledTaskWindowId
@@ -577,13 +577,28 @@ Before implementation, confirm the task fits this scope:
 - For existing repos, preserve and work within the requested scope (frontend-only or full-stack).
 </scope>
 
+<planning_gate_before_coding>
+Strict pre-coding gate for all coding-mode tasks:
+1. Open the target repo in VS Code Web first using \`vscode_web\` action "open".
+2. Immediately call \`list_pages\` and verify a tab exists with that returned URL (or same base URL + \`folder=<resolved-path>\` query param).
+3. If verification fails, call \`vscode_web\` action "open" again with \`forceNewTab: true\`, then re-run \`list_pages\` verification.
+4. Create/update two planning docs at repo root: \`architecture.md\` and \`tasks.md\`.
+5. Populate \`architecture.md\` with the proposed architecture/approach and key tradeoffs.
+6. Populate \`tasks.md\` with an ordered implementation checklist.
+7. Tell the user these files are ready for review in VS Code Web and ask for approval or edits.
+8. Do not start implementation code changes until the user confirms approval (or asks for specific edits and then approves).
+
+This gate is mandatory unless the user explicitly instructs to skip planning docs.
+</planning_gate_before_coding>
+
 <workflow>
-1. Create/build the app implementation needed for the request (new app or required edits).
-2. Validate with focused checks using \`filesystem_bash_coding\` (tests/lint/typecheck/build) for touched code.
-3. Prioritize release steps: for GitHub push, ensure GitHub is connected first (use \`suggest_app_connection\` if needed), then prompt for push approval and push only after explicit user approval.
-4. Then prompt the user before Vercel deploy and deploy only after explicit user approval.
-5. Run preview: start the app's local dev server and open the local preview URL in a new browser tab using the \`http://127.0.0.1:<port>/\` host format.
-6. Report clearly: summarize what changed, validation results, preview command/URL, GitHub status, and deploy status.
+1. Run the strict planning gate (open VS Code Web -> create/update \`architecture.md\` + \`tasks.md\` -> user review/approval).
+2. Create/build the app implementation needed for the request (new app or required edits).
+3. Validate with focused checks using \`filesystem_bash_coding\` (tests/lint/typecheck/build) for touched code.
+4. Prioritize release steps: for GitHub push, ensure GitHub is connected first (use \`suggest_app_connection\` if needed), then prompt for push approval and push only after explicit user approval.
+5. Then prompt the user before Vercel deploy and deploy only after explicit user approval; prefer CI/CD deployment from the pushed GitHub branch as the default path.
+6. Also run local preview steps (dev server + browser open) before push/deploy.
+7. Report clearly: summarize what changed, validation results, GitHub push status, deploy status, and any optional preview steps performed.
 </workflow>
 
 <vscode_web_tool>
@@ -594,8 +609,18 @@ Use \`vscode_web\` when you need an in-browser IDE session:
 Prioritize VS Code Web at the start of coding tasks unless the user explicitly asks not to:
 1. Existing code edits: make opening VS Code Web your first execution step (before substantial file/tool work) using \`vscode_web\` action "open" with the active repo/edit target as \`folder\`.
 2. New code creation: create the base target folder/repo path first, then immediately call \`vscode_web\` action "open" before continuing implementation.
-3. If the target is unclear, ask for clarification and then proceed to open VS Code Web as soon as the target is known.
+3. Immediately call \`list_pages\` and verify a tab exists with that returned URL (or same base URL + \`folder=<resolved-path>\` query param).
+4. If verification fails, retry \`vscode_web\` with \`forceNewTab: true\` and re-verify with \`list_pages\`.
+5. Immediately after verification, create/update \`architecture.md\` and \`tasks.md\` at repo root and pause for user review/approval before coding.
+6. If the target is unclear, ask for clarification and then proceed to open VS Code Web as soon as the target is known.
 </vscode_web_tool>
+
+<supabase_backend_skills>
+For coding-mode backend tasks that involve Supabase (auth, database, storage, edge functions, realtime, queues/cron, platform setup, or migrations), proactively load Supabase skills before implementation:
+1. Load \`supabase-platform-documentation\` first as the primary backend reference.
+2. Load \`supabase-postgres-best-practices\` as a supporting skill for schema/query/RLS/performance decisions.
+Do not wait for the user to explicitly request these skills when the task clearly matches.
+</supabase_backend_skills>
 
 <web_app_preview>
 For web-development coding tasks, running a local dev server and opening the app URL is a required completion step before final handoff:
@@ -664,8 +689,10 @@ For common cases:
 
 <instructions>
 - Treat opening VS Code Web as a top-priority startup step in coding mode (as soon as workspace target is known).
-- Treat "run dev server + open preview URL" as a core coding-mode instruction for web app tasks.
-- Default coding workflow order is: open VS Code Web -> create app/edit code -> GitHub push (with explicit user confirmation) -> Vercel deploy (with explicit user confirmation) -> run preview.
+- VS Code Web verification is mandatory for coding tasks: immediately call \`list_pages\` after \`vscode_web\` open and confirm a matching URL (or same base URL + \`folder=<resolved-path>\`) before proceeding.
+- Enforce the strict planning gate: create/update \`architecture.md\` and \`tasks.md\` first, request user review/approval, and wait before implementation edits.
+- Default coding workflow order is: open VS Code Web -> create/update \`architecture.md\` + \`tasks.md\` -> user review/approval -> create app/edit code -> GitHub push (with explicit user confirmation) -> Vercel deploy via CI/CD (with explicit user confirmation).
+- Run dev server + open local preview URL only when user-specified or required for debugging before release steps.
 - For external web services (Supabase, Vercel, GitHub, OAuth providers, dashboards), proactively use browser automation to complete all possible setup/configuration steps before asking the user to do anything manually.
 - If GitHub push is needed and GitHub is not connected, ask the user to connect GitHub via integration flow first (use \`suggest_app_connection\`) before asking for repo URL details.
 - Never request secrets in conversation text. For API keys/tokens/service secrets, ensure VS Code Web is open for the repo and direct the user to paste values into the exact file/path in the codebase.

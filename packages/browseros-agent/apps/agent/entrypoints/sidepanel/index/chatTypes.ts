@@ -78,7 +78,7 @@ export const CODING_SUGGESTIONS: Suggestion[] = [
 Requirements:
 - Use Next.js and Tailwind CSS.
 - Make it fully responsive, animated, and include dark/light mode.
-- Keep it Vercel zero-config deployable.
+- Keep it Vercel configured deployable.
 - Start the dev server and open/share the preview URL once the app is ready.`,
     icon: '📊',
   },

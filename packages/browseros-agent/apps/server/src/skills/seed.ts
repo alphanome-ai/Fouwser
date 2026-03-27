@@ -49,11 +49,16 @@ async function copySupportingFiles(
 
 async function backfillSupportingFiles(skillsDir: string): Promise<void> {
   let updated = 0
+  let added = 0
   for (const skill of DEFAULT_SKILLS) {
     try {
       const targetDir = join(skillsDir, skill.id)
       const targetSkillMd = join(targetDir, 'SKILL.md')
-      if (!(await pathExists(targetSkillMd))) continue
+      if (!(await pathExists(targetSkillMd))) {
+        await mkdir(targetDir, { recursive: true })
+        await writeFile(targetSkillMd, skill.content)
+        added++
+      }
 
       await copySupportingFiles(skill.id, targetDir, { overwrite: false })
       updated++
@@ -65,8 +70,10 @@ async function backfillSupportingFiles(skillsDir: string): Promise<void> {
     }
   }
 
-  if (updated > 0) {
-    logger.info(`Backfilled supporting files for ${updated} default skills`)
+  if (added > 0 || updated > 0) {
+    logger.info(
+      `Synced default skills: added ${added}, backfilled supporting files for ${updated}`,
+    )
   }
 }
 

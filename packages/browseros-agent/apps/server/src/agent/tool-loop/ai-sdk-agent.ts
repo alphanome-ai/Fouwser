@@ -48,7 +48,7 @@ export class AiSdkAgent {
     // Coding mode keeps minimal browser tools for local IDE + web preview.
     const browserTools = isCodingMode
       ? buildBrowserToolSet(config.registry, config.browser, {
-          allowNames: new Set(['vscode_web', 'new_page']),
+          allowNames: new Set(['vscode_web', 'new_page', 'list_pages']),
         })
       : buildBrowserToolSet(config.registry, config.browser)
 

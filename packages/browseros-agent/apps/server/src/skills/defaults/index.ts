@@ -18,10 +18,10 @@ import screenshotWalkthrough from './screenshot-walkthrough/SKILL.md' with {
   type: 'text',
 }
 import summarizePage from './summarize-page/SKILL.md' with { type: 'text' }
-import supabasePostgresBestPractices from './supabase-postgres-best-practices/SKILL.md' with {
+import supabasePlatformDocumentation from './supabase-platform-documentation/SKILL.md' with {
   type: 'text',
 }
-import vercelCliWithTokens from './vercel-cli-with-tokens/SKILL.md' with {
+import supabasePostgresBestPractices from './supabase-postgres-best-practices/SKILL.md' with {
   type: 'text',
 }
 import vercelReactBestPractices from './vercel-react-best-practices/SKILL.md' with {
@@ -45,8 +45,11 @@ export const DEFAULT_SKILLS: DefaultSkill[] = [
   { id: 'monitor-page', content: monitorPage },
   { id: 'read-later', content: readLater },
   { id: 'manage-bookmarks', content: manageBookmarks },
-  { id: 'vercel-cli-with-tokens', content: vercelCliWithTokens },
   { id: 'vercel-react-best-practices', content: vercelReactBestPractices },
+  {
+    id: 'supabase-platform-documentation',
+    content: supabasePlatformDocumentation,
+  },
   {
     id: 'supabase-postgres-best-practices',
     content: supabasePostgresBestPractices,

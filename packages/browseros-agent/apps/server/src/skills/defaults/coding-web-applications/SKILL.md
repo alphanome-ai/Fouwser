@@ -15,9 +15,11 @@ Use this skill when implementing or extending a full-stack web application, spec
 
 For frontend work involving the database, always load and apply `vercel-react-best-practices` as a supporting skill before implementation details are finalized and use the skills.
 
-For backend work involving the database, always load and apply `supabase-postgres-best-practices` as a supporting skill before implementation details are finalized and use the skills.
+For backend work involving Supabase (auth, database, storage, edge functions, realtime, queues, cron, or platform setup), always load and apply `supabase-platform-documentation` first as a supporting skill before implementation details are finalized.
 
-For tasks related to deploying the application to vercel use skills `deploy-to-vercel` and `vercel-cli-with-tokens` as supporting skills.
+For backend work involving Postgres schema/query design or performance tuning, also load and apply `supabase-postgres-best-practices` as a supporting skill before implementation details are finalized.
+
+For tasks related to deploying the application to Vercel use skill `deploy-to-vercel` as the canonical supporting skill.
 
 Use appropriate skills specifically for:
 - Frontend work and optimization
@@ -50,6 +52,15 @@ For coding tasks that require backend persistence, relational data modeling, aut
 6. If the user explicitly asks for a different database/provider, follow the user requirement.
 
 ## Workflow
+
+Preferred default release flow:
+1. Open repo in VS Code Web and create/update planning docs: `architecture.md` and `tasks.md`.
+2. Ask the user to review/edit those files and confirm approval before coding starts.
+3. Implement application changes.
+4. Run focused validation for touched code.
+5. Push to GitHub (after explicit user approval).
+6. Deploy to Vercel via CI/CD from the pushed branch (after explicit user approval).
+7. Run other steps (local preview, additional manual checks) only when the user explicitly asks or when needed to debug blockers.
 
 ### 1. Align Scope First
 
@@ -134,13 +145,13 @@ Run relevant checks after changes:
 
 If any check cannot run, explain exactly why and what remains unverified.
 
-After building or making code changes, ensure a local dev server is running:
+After building or making code changes, run a local dev server preview only when requested by the user or when needed for debugging:
 
 - Open the code repository directory in a browser tab using `vscode_web` with `action: "open"` and `folder` set to the project/repo.
 - If a dev server is not running, start it immediately.
 - If one is already running for the same project, reuse it instead of starting duplicates.
 - After ensuring that the dev server is running, open the application URL in a browser tab using `new_page(URL)`.
-- Do not finalize the task without an active dev server preview, unless the user explicitly says to skip it.
+- Do not require local preview as a default completion gate when CI/CD deployment is the requested workflow.
 
 ### 6.1 Dev Server Host and Port Recovery
 

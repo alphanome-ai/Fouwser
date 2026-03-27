@@ -42,8 +42,8 @@ const UI_HIDDEN_SKILL_IDS = new Set<string>([
   'supabase-postgres-best-practices',
   'coding-web-applications',
   'deploy-to-vercel',
-  'vercel-cli-with-tokens',
   'vercel-react-best-practices',
+  'supabase-platform-documentation',
 ])
 
 export const SkillsPage: FC = () => {
