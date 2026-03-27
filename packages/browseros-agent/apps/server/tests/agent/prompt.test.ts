@@ -21,6 +21,9 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain(
       'Never read `.env` files (including `.env`, `.env.*`, and local env secret files).',
     )
+    expect(prompt).toContain(
+      'Track prerequisites already confirmed by the user and do not ask for the same prerequisite again unless a verification check fails.',
+    )
   })
 
   it('enforces integration-first execution for connected apps', () => {
@@ -58,5 +61,12 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('tasks.md')
     expect(prompt).toContain('Immediately call `list_pages`')
     expect(prompt).toContain('folder=<resolved-path>')
+    expect(prompt).toContain('<deployment_cicd_orchestration>')
+    expect(prompt).toContain(
+      'Create/link the Vercel project before asking the user to configure Vercel environment variables.',
+    )
+    expect(prompt).toContain(
+      'Keep task-level prerequisite state (connected apps, chosen deploy path, repo name, env-var confirmation, push approval)',
+    )
   })
 })
