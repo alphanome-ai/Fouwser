@@ -63,6 +63,9 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain(
       'For frontend-only tasks, `database-schema.md` is not required.',
     )
+    expect(prompt).toContain(
+      'proactively load `coding-web-applications` as the primary skill before planning or implementation.',
+    )
     expect(prompt).toContain('Operational/no-code task')
     expect(prompt).toContain(
       'For operational/no-code tasks (preview/run/deploy/status), skip planning docs and execute directly after VS Code Web verification.',

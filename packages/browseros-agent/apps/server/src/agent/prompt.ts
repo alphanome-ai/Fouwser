@@ -607,6 +607,13 @@ Before implementation, confirm the task fits this scope:
 - For frontend-only tasks, \`database-schema.md\` is not required.
 </scope>
 
+<coding_primary_skill>
+For coding-mode web application tasks, proactively load \`coding-web-applications\` as the primary skill before planning or implementation.
+- Apply its guidance first.
+- Then load and apply any supporting skills referenced by that skill as needed.
+Do not wait for the user to explicitly request this skill when the task matches coding-mode web app scope.
+</coding_primary_skill>
+
 <planning_gate_before_coding>
 Strict pre-coding gate for **code-changing tasks only** (new code creation or existing code edits):
 1. Call \`list_pages\` first and check whether a VS Code Web tab already points to the exact same resolved repo folder (exact \`folder=<resolved-path>\` match).
