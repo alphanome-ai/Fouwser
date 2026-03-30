@@ -22,6 +22,7 @@ For backend work involving Postgres schema/query design or performance tuning, a
 For tasks related to deploying the application to Vercel use skill `deploy-to-vercel` as the canonical supporting skill.
 
 Use appropriate skills specifically for:
+
 - Frontend work and optimization
 - Database schema design and migrations
 - Query design and performance/indexing decisions
@@ -54,13 +55,18 @@ For coding tasks that require backend persistence, relational data modeling, aut
 ## Workflow
 
 Preferred default release flow:
-1. Open repo in VS Code Web and create/update planning docs: `architecture.md` and `tasks.md`.
-2. Ask the user to review/edit those files and confirm approval before coding starts.
-3. Implement application changes.
-4. Run focused validation for touched code.
-5. Push to GitHub (after explicit user approval).
-6. Deploy to Vercel via CI/CD from the pushed branch (after explicit user approval).
-7. Run other steps (local preview, additional manual checks) only when the user explicitly asks or when needed to debug blockers.
+
+1. Open repo in VS Code Web.
+2. If task type is new app creation, create/update planning docs: `architecture.md` and `tasks.md`, then ask the user to review/edit and confirm approval before coding starts.
+3. If task type is existing code edits, do not create `architecture.md` or `tasks.md` by default; provide a concise pre-edit summary in chat (planned changes, likely files/areas, validation plan), then proceed.
+4. Complete prerequisites first: discover all required keys/secrets and verify they are configured in repo env files without exposing values.
+5. If secrets are missing/invalid, run manual handoff to provider dashboards and have the user paste values directly into repo env files in VS Code Web (never in chat), then re-verify.
+6. Implement application changes.
+7. Run focused validation for touched code.
+8. Run a production build (`build` script or project equivalent) and require a clean pass with zero errors before considering the app production-ready.
+9. Push to GitHub (after explicit user approval).
+10. Deploy to Vercel via CI/CD from the pushed branch (after explicit user approval).
+11. Run other steps (local preview, additional manual checks) only when the user explicitly asks or when needed to debug blockers.
 
 ### 1. Align Scope First
 
@@ -79,7 +85,7 @@ Prefer this order for data flow and logic:
 
 1. **Server Components:** Use for read-only data fetching directly from the database to keep payload sizes small.
 2. **Server Actions:** Use for form submissions, database mutations, and revalidating cache paths.
-3. **Route Handlers (`app/api/...`):** Use ONLY when the endpoint is consumed by third-party services, mobile clients, or webhooks. 
+3. **Route Handlers (`app/api/...`):** Use ONLY when the endpoint is consumed by third-party services, mobile clients, or webhooks.
 
 ### 2. Implement End-to-End
 
@@ -142,6 +148,11 @@ Run relevant checks after changes:
 - `npm run test` for touched behavior
 - `npm run build` for production readiness
 - For Supabase-backed changes, verify env wiring and execute at least one successful DB read/write or health-check through the app code path.
+
+Production-readiness gate:
+
+- Do not mark the task complete until the production build command passes without errors (unless the user explicitly waives this check).
+- Include which build command was run and whether it passed.
 
 If any check cannot run, explain exactly why and what remains unverified.
 
