@@ -23,7 +23,7 @@
 </div> -->
 
 ##
-🌐 BrowserOS is an open-source Chromium fork that runs AI agents natively. **The privacy-first alternative to ChatGPT Atlas, Perplexity Comet, and Dia.**
+🌐 Fouwser is an open-source Chromium fork that runs AI agents natively. **The privacy-first alternative to ChatGPT Atlas, Perplexity Comet, and Dia.**
 
 🔒 Use your own API keys or run local models with Ollama. Your data never leaves your machine.
 
