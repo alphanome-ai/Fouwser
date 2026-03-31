@@ -24,6 +24,7 @@
 We'd love your help making Fouwser better!
 
 - 🐛 [Report bugs](https://github.com/alphanome-ai/Fouwser/issues)
+- 💬 [Join our Discord](https://discord.gg/DNe5rp8pen)
 
 ## License
 

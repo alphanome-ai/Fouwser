@@ -73,13 +73,7 @@ export const CODING_SUGGESTIONS: Suggestion[] = [
       'A productivity app for me to plan track habits, and become more productive.',
     submitLabel: 'Generate',
     requiredInputError: 'Describe your app idea first.',
-    promptTemplate: `Build a modern, production-ready SaaS web app tailored for this company/idea: {{input}}
-
-Requirements:
-- Use Next.js and Tailwind CSS.
-- Make it fully responsive, animated, and include dark/light mode.
-- Keep it Vercel configured deployable.
-- Start the dev server and open/share the preview URL once the app is ready.`,
+    promptTemplate: `Build a modern, production-ready SaaS web app tailored for this company/idea: {{input}}`,
     icon: '📊',
   },
   {
@@ -94,14 +88,7 @@ Requirements:
     promptTemplate: `Act as a senior conversion copywriter and UX strategist.
 
 Create a high-converting landing page for this company/idea:
-{{input}}
-
-Requirements:
-- Build with React and Tailwind CSS.
-- Include clear sections: hero, problem, solution, features, social proof, pricing/offer, FAQ, and CTA.
-- Write compelling copy targeted to the likely ICP for this business.
-- Make the design modern, responsive, and production-ready.
-- Start the dev server and open/share the preview URL when complete.`,
+{{input}}`,
     icon: '🛠️',
   },
 ]
