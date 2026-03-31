@@ -1,8 +1,8 @@
-# Contributing to BrowserOS
+# Contributing to Fouwser
 
-Hey there! Thanks for your interest in BrowserOS. Whether you're fixing bugs, adding features, improving docs, or just poking around the code, we're glad you're here.
+Hey there! Thanks for your interest in Fouwser. Whether you're fixing bugs, adding features, improving docs, or just poking around the code, we're glad you're here.
 
-BrowserOS is a monorepo with two main parts:
+Fouwser is a monorepo with two main parts:
 - **Agent** - The Chrome extension with AI features (TypeScript/React)
 - **Browser** - The custom Chromium build (C++/Python)
 
@@ -83,8 +83,6 @@ yarn build:dev       # One-time build
 3. Click **Load unpacked**
 4. Select `packages/browseros-agent/dist/`
 5. Press Agent icon from extensions toolbar to open the agent panel
-
-**For detailed setup, architecture, and code standards, see [Agent Contributing Guide](packages/browseros-agent/CONTRIBUTING.md).**
 
 ## Browser Development
 
@@ -229,7 +227,7 @@ You don't need to write code to help out! Here are other ways:
 
 ### 🐛 Report Bugs
 
-Found a bug? [Open an issue](https://github.com/browseros-ai/BrowserOS/issues/new) with:
+Found a bug? [Open an issue](https://github.com/alphanome-ai/Fouwser/issues/new) with:
 - Clear description
 - Steps to reproduce
 - Expected vs actual behavior
@@ -238,7 +236,7 @@ Found a bug? [Open an issue](https://github.com/browseros-ai/BrowserOS/issues/ne
 
 ### 💡 Suggest Features
 
-Have an idea? [Share it here](https://github.com/browseros-ai/BrowserOS/issues/99) or chat with us on [Discord](https://discord.gg/YKwjt5vuKr).
+Have an idea? [Share it here](https://github.com/alphanome-ai/Fouwser/discussions)
 
 ### 📚 Improve Documentation
 
@@ -262,9 +260,8 @@ Have an idea? [Share it here](https://github.com/browseros-ai/BrowserOS/issues/9
 
 Stuck? Need clarification? We're here to help.
 
-- **[Discord](https://discord.gg/YKwjt5vuKr)** - Real-time chat and support
-- **[GitHub Issues](https://github.com/browseros-ai/BrowserOS/issues)** - Bug reports and features
-- **[GitHub Discussions](https://github.com/browseros-ai/BrowserOS/discussions)** - General questions
+- **[GitHub Issues](https://github.com/alphanome-ai/Fouwser/issues)** - Bug reports and features
+- **[GitHub Discussions](https://github.com/alphanome-ai/Fouwser/discussions)** - General questions
 
 ## Recognition
 
@@ -275,9 +272,3 @@ We appreciate all contributors! You'll get:
 ## License
 
 By contributing, you agree that your contributions will be licensed under AGPL-3.0.
-
----
-
-Built with ❤️ from San Francisco
-
-Questions? Hit us up on [Discord](https://discord.gg/YKwjt5vuKr) or [Twitter](https://twitter.com/browseros_ai).
