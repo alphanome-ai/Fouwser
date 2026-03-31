@@ -63,10 +63,12 @@ Preferred default release flow:
 5. If secrets are missing/invalid, run manual handoff to provider dashboards and have the user paste values directly into repo env files in VS Code Web (never in chat), then re-verify.
 6. Implement application changes.
 7. Run focused validation for touched code.
-8. Run a production build (`build` script or project equivalent) and require a clean pass with zero errors before considering the app production-ready.
-9. Push to GitHub (after explicit user approval).
-10. Deploy to Vercel via CI/CD from the pushed branch (after explicit user approval).
-11. Run other steps (local preview, additional manual checks) only when the user explicitly asks or when needed to debug blockers.
+8. For terminal execution, avoid commands that require interactive user input (prompts, password entry, editor sessions, confirmation dialogs, watch-mode prompts). Prefer non-interactive flags and one-shot commands.
+9. If a command is inherently interactive and has no safe non-interactive variant, do not run it automatically; switch to manual handoff with exact user steps.
+10. Run a production build (`build` script or project equivalent) and require a clean pass with zero errors before considering the app production-ready.
+11. Push to GitHub (after explicit user approval).
+12. Deploy to Vercel via CI/CD from the pushed branch (after explicit user approval).
+13. Run other steps (local preview, additional manual checks) only when the user explicitly asks or when needed to debug blockers.
 
 ### 1. Align Scope First
 

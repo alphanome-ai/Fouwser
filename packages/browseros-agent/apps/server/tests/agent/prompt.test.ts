@@ -74,7 +74,7 @@ describe('buildSystemPrompt', () => {
       'For `filesystem_bash_coding`, avoid running commands that require interactive terminal input',
     )
     expect(prompt).toContain(
-      'Populate `architecture.md` like a senior engineer design brief with clear sections for: frontend architecture, backend/service architecture, system architecture, and data/database architecture',
+      'For new code creation, populate `architecture.md` like a senior engineer design brief with clear sections for: frontend architecture, backend/service architecture, system architecture, and data/database architecture',
     )
     expect(prompt).toContain(
       'For backend/full-stack tasks, populate `database-schema.md` as a project artifact with the planned schema: tables, columns/types, primary/foreign keys, indexes, relationships, constraints, and migration notes',
