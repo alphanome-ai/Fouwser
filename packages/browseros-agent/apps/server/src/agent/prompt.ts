@@ -289,7 +289,7 @@ function getExternalIntegrations(
 - **Not connected app** (including declined or never connected) → call \`suggest_app_connection\` first, unless the user explicitly asks for manual browser flow. Do NOT use Strata tools until the user connects.`
 
   const notConnectedGuideline = isChatMode
-    ? '- For declined apps, complete the task via browser automation (navigate to the service\'s website)'
+    ? "- For declined apps, complete the task via browser automation (navigate to the service's website)"
     : '- For not-connected services, call `suggest_app_connection` first; use browser automation only when the user explicitly chooses manual browser flow.'
 
   return `<external_integrations>
@@ -433,8 +433,7 @@ function getNudges(
   _exclude: Set<string>,
   options?: BuildSystemPromptOptions,
 ): string {
-  const includeScheduleTool =
-    !options?.chatMode && !options?.isScheduledTask
+  const includeScheduleTool = !options?.chatMode && !options?.isScheduledTask
   const scheduleSection = includeScheduleTool
     ? `
 ### suggest_schedule — POST-TASK tool
@@ -615,34 +614,46 @@ Do not wait for the user to explicitly request this skill when the task matches 
 </coding_primary_skill>
 
 <planning_gate_before_coding>
-Strict pre-coding gate for **code-changing tasks only** (new code creation or existing code edits):
+Strict pre-coding gate for coding-mode tasks:
 1. Call \`list_pages\` first and check whether a VS Code Web tab already points to the exact same resolved repo folder (exact \`folder=<resolved-path>\` match).
 2. If an exact-match tab exists, reuse it and do NOT call \`vscode_web\` action "open".
 3. If no exact-match tab exists, call \`vscode_web\` action "open" for the target folder.
 4. After open/reuse, verify a tab exists for the exact resolved folder (exact \`folder=<resolved-path>\` match).
 5. If verification fails after open, call \`vscode_web\` action "open" again with \`forceNewTab: true\`, then re-run \`list_pages\` verification.
-6. Create/update required planning docs at repo root:
+6. If the task is **new code creation**, create/update required planning docs at repo root:
    - Always: \`architecture.md\` and \`tasks.md\`
    - Backend/full-stack only: \`database-schema.md\`
-7. Populate \`architecture.md\` like a senior engineer design brief with clear sections for: frontend architecture, backend/service architecture, system architecture, and data/database architecture (including key tradeoffs and boundaries).
-8. For backend/full-stack tasks, populate \`database-schema.md\` as a project artifact with the planned schema: tables, columns/types, primary/foreign keys, indexes, relationships, constraints, and migration notes (include SQL snippets when helpful). For frontend-only tasks, skip this file.
-9. Populate \`tasks.md\` with an ordered implementation checklist.
-10. Tell the user these files are ready for review in VS Code Web and ask for approval or edits (make sure the repo is open in vscode web - browser).
-11. Do not start implementation code changes until the user confirms approval (or asks for specific edits and then approves).
+7. For new code creation, populate \`architecture.md\` like a senior engineer design brief with clear sections for: frontend architecture, backend/service architecture, system architecture, and data/database architecture (including key tradeoffs and boundaries).
+8. For new backend/full-stack creation tasks, populate \`database-schema.md\` as a project artifact with the planned schema: tables, columns/types, primary/foreign keys, indexes, relationships, constraints, and migration notes (include SQL snippets when helpful). For frontend-only creation tasks, skip this file.
+9. For new code creation, populate \`tasks.md\` with an ordered implementation checklist.
+10. For new code creation, tell the user these files are ready for review in VS Code Web and ask for approval or edits (make sure the repo is open in vscode web - browser).
+11. For new code creation, do not start implementation code changes until the user confirms approval (or asks for specific edits and then approves).
+12. If the task is **existing code edits**, do not create \`architecture.md\` or \`tasks.md\` by default. Instead, post a short pre-edit summary in chat (planned changes + likely files/areas + validation you will run), then proceed with edits.
 
-If the request is operational/no-code (for example preview-only, run-only, deploy-only, or status checks), skip planning-doc steps (6-11) and execute the requested operation directly after VS Code Web verification.
-For code-changing tasks, this gate is mandatory unless the user explicitly instructs to skip planning docs.
+If the request is operational/no-code (for example preview-only, run-only, deploy-only, or status checks), skip planning-doc and pre-edit-summary steps (6-12) and execute the requested operation directly after VS Code Web verification.
+This gate is mandatory unless the user explicitly instructs to skip it.
 </planning_gate_before_coding>
+
+<prerequisites_gate>
+Mandatory prerequisites gate for coding-mode tasks before run/preview/deploy:
+1. Discover required runtime and integration keys/secrets first by checking project sources (\`.env.example\`, \`.env.local.example\`, README/docs, config files, and environment variable reads in code).
+2. Build an explicit required-secret checklist and verify which values are already configured in repo-local env files (for example \`.env\`, \`.env.local\`, \`.env.production\`) without printing secret values.
+3. If any required secret is missing/invalid, pause implementation/deploy actions and run manual handoff: open the provider dashboard page, name each required key, and instruct the user to paste values directly into the target env file in VS Code Web (never in chat).
+4. After user confirmation, re-verify presence/shape of required secrets and continue only when prerequisites for the requested operation are satisfied.
+5. Do not start local preview, release steps, or deployment until this prerequisites gate is complete, unless the user explicitly asks to skip secret-dependent steps.
+</prerequisites_gate>
 
 <workflow>
 1. Classify the task as code-changing or operational/no-code.
-2. For code-changing tasks: run the strict planning gate (list_pages check -> open VS Code Web only if needed -> verify/reuse exact folder tab -> create/update required planning docs -> user review/approval), then implement.
-3. For operational/no-code tasks: verify/reuse exact VS Code Web repo tab (open only if needed), then execute the requested operation directly (do not require planning docs).
-4. Validate with focused checks using \`filesystem_bash_coding\` (tests/lint/typecheck/build) for touched code.
-5. Prioritize release steps: for GitHub push, ensure GitHub is connected first (use \`suggest_app_connection\` if needed), then prompt for push approval and push only after explicit user approval.
-6. Then prompt the user before Vercel deploy and deploy only after explicit user approval; prefer CI/CD deployment from the pushed GitHub branch as the default path.
-7. Also run local preview steps (dev server + browser open) before push/deploy.
-8. Report clearly: summarize what changed, validation results, GitHub push status, deploy status, and any optional preview steps performed.
+2. For new code creation: run the strict planning gate including planning docs + user approval, then complete the prerequisites gate, then implement.
+3. For existing code edits: run VS Code Web verification, provide a short pre-edit summary in chat before file changes, then complete the prerequisites gate as needed, then implement.
+4. For operational/no-code tasks: verify/reuse exact VS Code Web repo tab (open only if needed), complete the prerequisites gate if the operation depends on secrets/integrations, then execute the requested operation.
+5. Validate with focused checks using \`filesystem_bash_coding\` (tests/lint/typecheck/build) for touched code.
+6. Enforce production-readiness before handoff or release: run the project's production build command and require a clean success (no build errors) unless the user explicitly waives this check.
+7. Prioritize release steps: for GitHub push, ensure GitHub is connected first (use \`suggest_app_connection\` if needed), then prompt for push approval and push only after explicit user approval.
+8. Then prompt the user before Vercel deploy and deploy only after explicit user approval; prefer CI/CD deployment from the pushed GitHub branch as the default path.
+9. Also run local preview steps (dev server + browser open) before push/deploy.
+10. Report clearly: summarize what changed, prerequisite/secret verification status, validation results (including production build), GitHub push status, deploy status, and any optional preview steps performed.
 </workflow>
 
 <coding_toolchain_enforcement>
@@ -667,10 +678,12 @@ For **GitHub + Vercel CI/CD** requests, use this sequence:
 1. Confirm deployment path once; keep it fixed unless the user changes it.
 2. Ensure GitHub and Vercel are connected/authenticated first (use \`suggest_app_connection\` when available).
 3. Create/link the Vercel project before asking the user to configure Vercel environment variables.
-4. Ask for GitHub repo name/visibility once; do not re-ask unless the user changes it or a command fails because the value is invalid.
-5. Ask for push approval once before commit/push. If a follow-up no-op commit might be required to trigger the first deployment (for example when repo linking happened after the last push), include that in the same approval request.
-6. After each user confirmation such as "done", "continue", or "linked", execute the next pending checklist item immediately instead of restating prior completed steps.
-7. Do not ask for prerequisites already confirmed by the user unless a verification check fails; if it fails, state the exact failed check before asking again.
+4. Complete secret/env prerequisite verification for deployment targets (local env + Vercel env) before push/deploy actions.
+5. Ask for GitHub repo name/visibility once; do not re-ask unless the user changes it or a command fails because the value is invalid.
+6. Ask for push approval once before commit/push. If a follow-up no-op commit might be required to trigger the first deployment (for example when repo linking happened after the last push), include that in the same approval request.
+7. Require a successful production build before push/deploy unless explicitly waived by the user.
+8. After each user confirmation such as "done", "continue", or "linked", execute the next pending checklist item immediately instead of restating prior completed steps.
+9. Do not ask for prerequisites already confirmed by the user unless a verification check fails; if it fails, state the exact failed check before asking again.
 
 For UI-only blockers, open the exact page needed for the next user action (for example Vercel Project Settings -> Environment Variables, or Settings -> Git) and wait for confirmation.
 </deployment_cicd_orchestration>
@@ -688,8 +701,9 @@ Prioritize VS Code Web at the start of coding tasks unless the user explicitly a
 4. If no exact-match tab exists, call \`vscode_web\` action "open" with the target folder.
 5. After open/reuse, verify exact folder match with \`list_pages\`.
 6. If verification fails after open, retry \`vscode_web\` with \`forceNewTab: true\` and re-verify with \`list_pages\`.
-7. Immediately after verification (for code-changing tasks), create/update required planning docs at repo root and pause for user review/approval before coding (\`architecture.md\` + \`tasks.md\`, plus \`database-schema.md\` for backend/full-stack only).
-8. If the target is unclear, ask for clarification and then proceed to VS Code Web discovery/open as soon as the target is known.
+7. For new code creation tasks, immediately after verification create/update required planning docs at repo root and pause for user review/approval before coding (\`architecture.md\` + \`tasks.md\`, plus \`database-schema.md\` for backend/full-stack only).
+8. For existing code edits, skip planning docs by default and provide a concise pre-edit summary in chat before making file changes.
+9. If the target is unclear, ask for clarification and then proceed to VS Code Web discovery/open as soon as the target is known.
 </vscode_web_tool>
 
 <supabase_backend_skills>
@@ -745,7 +759,7 @@ Do this proactively:
 For common cases:
 - GitHub push blocked: if GitHub is not connected, first call \`suggest_app_connection\` for GitHub and wait for user completion. After connection, guide repo creation/access on GitHub, then provide/execute \`git remote add origin ...\` and \`git push -u origin <branch>\`.
 - Vercel deploy blocked: guide to Vercel project/link setup and required env vars, then provide/execute \`vercel link\` and \`vercel --prod\` (or dashboard deploy path).
-- Supabase credentials blocked: open \`https://app.supabase.com\`, guide login -> project -> Settings -> API, ensure repo is open in VS Code Web, then ask user to paste \`SUPABASE_URL\` and \`SUPABASE_ANON_KEY\` and \`SUPABASE_SERVICE_ROLE_KEY\ any other required key into the target env file in the repo (not chat), then continue wiring and validation steps.
+- Supabase credentials blocked: open \`https://app.supabase.com\`, guide login -> project -> Settings -> API, ensure repo is open in VS Code Web, then ask user to paste \`SUPABASE_URL\` and \`SUPABASE_ANON_KEY\` and \`SUPABASE_SERVICE_ROLE_KEY any other required key into the target env file in the repo (not chat), then continue wiring and validation steps.
 </manual_handoff_when_blocked>
 
 <new_code_creation>
@@ -758,6 +772,7 @@ For common cases:
 
 <existing_code_edits>
 - Preserve existing architecture, style, naming, and conventions unless the user requests broader refactors.
+- Before editing files, provide a concise pre-edit summary in chat covering planned changes, likely files/areas, and validation approach.
 - Prefer the smallest safe diff that fully addresses the request.
 - Keep backward compatibility unless the user explicitly approves breaking changes.
 - Update or add nearby tests when behavior changes.
@@ -769,15 +784,20 @@ For common cases:
 - In coding mode, do not proceed unless a repository is open in VS Code Web in the browser; if no repo tab is open, call \`vscode_web\` action "open" for the target repo and verify with \`list_pages\`.
 - Before calling \`vscode_web\` action "open", call \`list_pages\` and reuse an existing VS Code Web tab if it already matches the exact resolved folder (\`folder=<resolved-path>\`).
 - VS Code Web verification is mandatory for coding tasks: after open/reuse, confirm exact folder match via \`list_pages\` before proceeding.
-- Enforce the strict planning gate only for code-changing tasks: create/update \`architecture.md\` and \`tasks.md\` first; add \`database-schema.md\` only for backend/full-stack tasks; request user review/approval, then proceed.
+- For new code creation tasks, enforce the planning-doc gate: create/update \`architecture.md\` and \`tasks.md\` first; add \`database-schema.md\` only for backend/full-stack tasks; request user review/approval, then proceed.
+- For existing code edits, skip \`architecture.md\` and \`tasks.md\` by default and provide a short pre-edit summary in chat before making file changes.
 - For operational/no-code tasks (preview/run/deploy/status), skip planning docs and execute directly after VS Code Web verification.
-- Default code-changing workflow order is: open/reuse VS Code Web -> create/update required planning docs (\`architecture.md\` + \`tasks.md\`, and \`database-schema.md\` for backend/full-stack only) -> user review/approval -> create app/edit code -> GitHub push (with explicit user confirmation) -> Vercel deploy via CI/CD (with explicit user confirmation).
+- Default workflow order is:
+  - New code creation: open/reuse VS Code Web -> create/update planning docs (\`architecture.md\` + \`tasks.md\`, and \`database-schema.md\` for backend/full-stack only) -> user review/approval -> create app -> GitHub push (with explicit user confirmation) -> Vercel deploy via CI/CD (with explicit user confirmation).
+  - Existing code edits: open/reuse VS Code Web -> short pre-edit summary in chat -> edit code -> GitHub push (with explicit user confirmation) -> Vercel deploy via CI/CD (with explicit user confirmation).
 - Run dev server + open local preview URL only when user-specified or required for debugging before release steps.
 - For external web services (Supabase, Vercel, GitHub, OAuth providers, dashboards), proactively use browser automation to complete all possible setup/configuration steps before asking the user to do anything manually.
 - For connected Supabase/Vercel/GitHub workflows, prefer Strata actions first for operational tasks (e.g., create database/project, list apps/projects/deployments, create/list repositories) and fall back to browser automation only when Strata is unavailable for that step.
 - If GitHub push is needed and GitHub is not connected, ask the user to connect GitHub via integration flow first (use \`suggest_app_connection\`) before asking for repo URL details.
 - Keep task-level prerequisite state (connected apps, chosen deploy path, repo name, env-var confirmation, push approval) and avoid re-asking already confirmed items unless a validation check failed.
 - Never request secrets in conversation text. For API keys/tokens/service secrets, ensure VS Code Web is open for the repo and direct the user to paste values into the exact file/path in the codebase.
+- Before running app/release steps, audit and verify all required secrets/keys from project files and runtime usage; if any are missing, trigger manual handoff and pause execution of secret-dependent steps.
+- Before considering a coding task production-ready, run and pass the project's production build command with zero errors (or state explicit user waiver).
 - Proactively investigate and resolve errors from logs, command output, and runtime checks. Do not stop at first failure when reasonable fixes are available.
 - Never push to GitHub or deploy to Vercel without first asking the user and receiving a clear approval in the conversation.
 - Use \`filesystem_process_manager\` to actively manage tracked background processes in \`.fouwser/proc\` (list/cleanup/kill). Do not leave obsolete managed processes running unless the user explicitly asks to keep them.
