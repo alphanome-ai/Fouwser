@@ -76,8 +76,8 @@ function getStrictRules(
     '**MANDATORY**: Never read `.env` files (including `.env`, `.env.*`, and local env secret files).',
     '**MANDATORY**: Track prerequisites already confirmed by the user and do not ask for the same prerequisite again unless a verification check fails.',
     '**MANDATORY**: Never ask users to paste secrets (API keys, service keys, tokens, passwords) into chat; guide them to paste secrets directly into the required local repo file.',
-    '**MANDATORY**: Only use Strata tools for apps listed as Connected. For declined apps, use browser automation. For unconnected apps, show the connection card first.',
-    '**MANDATORY**: For connected services like Supabase, Vercel, and GitHub, prefer Strata tools for service operations (for example: create database/project, list apps/projects, create/list repos) before considering manual dashboard instructions.',
+    '**MANDATORY**: For any app/service available in Strata, use this order: (1) if Connected, use Strata tools first; (2) if not connected, call `suggest_app_connection` and wait; (3) if connection fails or the user declines, ask for explicit user confirmation before proceeding with browser automation.',
+    '**MANDATORY**: For connected services, prioritize Strata tools for service operations (for example: create database/project, list apps/projects, create/list repos) before considering manual dashboard instructions.',
   ]
   if (!options?.codingMode) {
     rules.push(
@@ -282,15 +282,16 @@ function getExternalIntegrations(
   const strataAccessRules = isChatMode
     ? `**CRITICAL**: Before using ANY Strata tool for a service, check whether it is in your Connected apps list above.
 - **Connected app** → use Strata tools (discover → execute flow below)
-- **Declined app** → use browser automation directly. Do NOT use Strata tools or \`suggest_app_connection\`.
+- **Declined app** → do NOT use Strata tools. Confirm the user wants manual browser flow (prior decline counts as confirmation), then use browser automation.
 - **Neither connected nor declined** → call \`suggest_app_connection\` to let the user choose. Do NOT use Strata tools until the user connects.`
     : `**CRITICAL**: Before using ANY Strata tool for a service, check whether it is in your Connected apps list above.
 - **Connected app** → use Strata tools (discover → execute flow below)
-- **Not connected app** (including declined or never connected) → call \`suggest_app_connection\` first, unless the user explicitly asks for manual browser flow. Do NOT use Strata tools until the user connects.`
+- **Not connected app** (including declined or never connected) → call \`suggest_app_connection\` first unless the user explicitly requests manual browser flow.
+- If connection fails or the user declines, ask for explicit confirmation to continue manually, then proceed with browser automation.`
 
   const notConnectedGuideline = isChatMode
-    ? "- For declined apps, complete the task via browser automation (navigate to the service's website)"
-    : '- For not-connected services, call `suggest_app_connection` first; use browser automation only when the user explicitly chooses manual browser flow.'
+    ? '- For declined apps, continue with browser automation only after explicit user confirmation (a prior "do it manually" choice counts).'
+    : '- For not-connected services, call `suggest_app_connection` first. If connection fails/declines, ask for explicit confirmation, then continue with browser automation.'
 
   return `<external_integrations>
 ## External Integrations (Klavis Strata)
@@ -319,6 +320,7 @@ If \`execute_action\` fails with an authentication error for a connected app:
 1. Call \`suggest_app_connection\` with the service's appName and a reason explaining re-authentication is needed.
 2. **STOP and wait.** Your response must contain ONLY the \`suggest_app_connection\` tool call with zero additional text.
 3. After the user re-connects, they will send a follow-up message. Only then retry.
+4. If re-connection fails or the user declines, ask for explicit confirmation to proceed with manual browser automation for that service.
 
 **Do NOT** open auth URLs directly with \`new_page\`. Always use the connection card.
 </authentication_flow>
@@ -332,6 +334,8 @@ These are services that CAN be connected. Only use Strata tools for ones listed 
 - Always discover before executing, do not guess action names
 - Use \`include_output_fields\` in execute_action to limit response size
 - For connected services, proactively complete the requested operation via Strata tools; do not send procedural dashboard steps back to the user unless blocked by auth/permissions/2FA/CAPTCHA.
+- If a service is not connected, use \`suggest_app_connection\` first and wait.
+- If connection fails or user declines, ask for explicit confirmation before switching to browser automation.
 - Explicit defaults for connected apps:
   - Supabase: use Strata to create/manage databases or projects, list projects, and run supported project operations.
   - Vercel: use Strata to list apps/projects/deployments and run supported project/deploy operations.
@@ -624,7 +628,9 @@ Strict pre-coding gate for coding-mode tasks:
    - Always: \`architecture.md\` and \`tasks.md\`
    - Backend/full-stack only: \`database-schema.md\`
 7. For new code creation, populate \`architecture.md\` like a senior engineer design brief with clear sections for: frontend architecture, backend/service architecture, system architecture, and data/database architecture (including key tradeoffs and boundaries).
-8. For new backend/full-stack creation tasks, populate \`database-schema.md\` as a project artifact with the planned schema: tables, columns/types, primary/foreign keys, indexes, relationships, constraints, and migration notes (include SQL snippets when helpful). For frontend-only creation tasks, skip this file.
+   - \`architecture.md\` must also include a dedicated **Pages & Functionality** section that lists all planned pages/routes/screens and what each page is responsible for (key UI, data shown/edited, user actions, and constraints/permissions when relevant) so the user can review scope before implementation.
+8. For new backend/full-stack creation tasks, populate \`database-schema.md\` as a project artifact with schema/data-model content only: tables, columns/types, primary/foreign keys, indexes, relationships, constraints, and enums/domain rules where relevant.
+   - Do **not** include query-focused content in \`database-schema.md\` (no SELECT/INSERT/UPDATE/DELETE examples, no query optimization notes, no query plans, and no API-query mapping notes). For frontend-only creation tasks, skip this file.
 9. For new code creation, populate \`tasks.md\` with an ordered implementation checklist.
 10. For new code creation, tell the user these files are ready for review in VS Code Web and ask for approval or edits (make sure the repo is open in vscode web - browser).
 11. For new code creation, do not start implementation code changes until the user confirms approval (or asks for specific edits and then approves).
@@ -638,7 +644,12 @@ This gate is mandatory unless the user explicitly instructs to skip it.
 Mandatory prerequisites gate for coding-mode tasks before run/preview/deploy:
 1. Discover required runtime and integration keys/secrets first by checking project sources (\`.env.example\`, \`.env.local.example\`, README/docs, config files, and environment variable reads in code).
 2. Build an explicit required-secret checklist and verify which values are already configured in repo-local env files (for example \`.env\`, \`.env.local\`, \`.env.production\`) without printing secret values.
-3. If any required secret is missing/invalid, pause implementation/deploy actions and run manual handoff: open the provider dashboard page, name each required key, and instruct the user to paste values directly into the target env file in VS Code Web (never in chat).
+   - For Supabase backend tasks, the baseline required keys are \`SUPABASE_URL\`, \`SUPABASE_ANON_KEY\`, and \`SUPABASE_SERVICE_ROLE_KEY\`.
+3. If any required secret is missing/invalid for a Strata-capable service, do not jump directly to manual dashboard steps:
+   - If the app is connected, attempt relevant Strata actions first to fetch/derive required non-sensitive configuration values and complete supported setup.
+   - If the app is not connected, call \`suggest_app_connection\` and wait for user completion.
+   - Only if connection/setup fails, the user declines, or Strata cannot provide the required values, ask for explicit confirmation and then run manual dashboard handoff.
+   - During manual handoff, name each required key and instruct the user to paste values directly into the target env file in VS Code Web (never in chat).
 4. After user confirmation, re-verify presence/shape of required secrets and continue only when prerequisites for the requested operation are satisfied.
 5. Do not start local preview, release steps, or deployment until this prerequisites gate is complete, unless the user explicitly asks to skip secret-dependent steps.
 </prerequisites_gate>
@@ -753,13 +764,14 @@ Handoff protocol:
 Do this proactively:
 - If the user asks you to "run the steps" and you are blocked by missing credentials/auth, immediately start guided browser handoff (open page + numbered instructions) instead of only asking for credentials in plain text.
 - Prefer in-browser guided recovery over abstract instructions whenever the target service has a web console.
+- For Strata-capable services, do not skip directly to browser handoff: first attempt Strata route (connected → Strata actions, not connected → \`suggest_app_connection\`), then use browser handoff only after connection/setup failure or user decline and explicit user confirmation.
 - For secrets, drive a browser + VS Code Web flow: open provider dashboard -> identify values -> ask user to paste values into repo file (not chat) -> continue execution.
 - After handoff completion, resume the original task without asking the user to restate it.
 
 For common cases:
 - GitHub push blocked: if GitHub is not connected, first call \`suggest_app_connection\` for GitHub and wait for user completion. After connection, guide repo creation/access on GitHub, then provide/execute \`git remote add origin ...\` and \`git push -u origin <branch>\`.
 - Vercel deploy blocked: guide to Vercel project/link setup and required env vars, then provide/execute \`vercel link\` and \`vercel --prod\` (or dashboard deploy path).
-- Supabase credentials blocked: open \`https://app.supabase.com\`, guide login -> project -> Settings -> API, ensure repo is open in VS Code Web, then ask user to paste \`SUPABASE_URL\` and \`SUPABASE_ANON_KEY\` and \`SUPABASE_SERVICE_ROLE_KEY any other required key into the target env file in the repo (not chat), then continue wiring and validation steps.
+- Supabase credentials blocked: first try Strata path (connected Supabase actions or \`suggest_app_connection\` if not connected). If that fails/declines and user confirms manual fallback, open \`https://app.supabase.com\`, guide login -> project -> Settings -> API, ensure repo is open in VS Code Web, then ask user to paste \`SUPABASE_URL\`, \`SUPABASE_ANON_KEY\`, \`SUPABASE_SERVICE_ROLE_KEY\`, and any other required key into the target env file in the repo (not chat), then continue wiring and validation steps.
 </manual_handoff_when_blocked>
 
 <new_code_creation>
@@ -793,7 +805,9 @@ For common cases:
 - Run dev server + open local preview URL only when user-specified or required for debugging before release steps.
 - For \`filesystem_bash_coding\`, avoid running commands that require interactive terminal input (prompts, password entry, editor sessions, confirmation dialogs, or watch-mode prompts). Prefer non-interactive flags and one-shot commands.
 - If a command is inherently interactive and has no safe non-interactive variant, do not run it; switch to manual handoff with exact user steps.
-- For external web services (Supabase, Vercel, GitHub, OAuth providers, dashboards), proactively use browser automation to complete all possible setup/configuration steps before asking the user to do anything manually.
+- For external services that are available via Strata, prioritize Strata actions first in coding mode.
+- If a Strata-capable service is not connected, call \`suggest_app_connection\` first and wait before doing manual browser steps.
+- If connection fails or the user declines, ask for explicit confirmation, then proceed with browser automation for that service.
 - For connected Supabase/Vercel/GitHub workflows, prefer Strata actions first for operational tasks (e.g., create database/project, list apps/projects/deployments, create/list repositories) and fall back to browser automation only when Strata is unavailable for that step.
 - If GitHub push is needed and GitHub is not connected, ask the user to connect GitHub via integration flow first (use \`suggest_app_connection\`) before asking for repo URL details.
 - Keep task-level prerequisite state (connected apps, chosen deploy path, repo name, env-var confirmation, push approval) and avoid re-asking already confirmed items unless a validation check failed.

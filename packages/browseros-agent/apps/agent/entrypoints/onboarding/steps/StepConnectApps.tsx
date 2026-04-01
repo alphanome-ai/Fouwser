@@ -26,13 +26,14 @@ const RECOMMENDED_APPS = [
 ]
 
 const MORE_APPS = [
+  { name: 'GitHub' },
+  { name: 'Vercel' },
+  { name: 'Supabase' },
   { name: 'Notion' },
   { name: 'Slack' },
-  { name: 'GitHub' },
   { name: 'Linear' },
   { name: 'Jira' },
   { name: 'Google Docs' },
-  { name: 'Vercel' },
 ]
 
 export const StepConnectApps = ({

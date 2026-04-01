@@ -52,15 +52,28 @@ For coding tasks that require backend persistence, relational data modeling, aut
 5. If the repository already uses another database stack, preserve existing stack unless the user explicitly requests migration to Supabase.
 6. If the user explicitly asks for a different database/provider, follow the user requirement.
 
+For Supabase backend tasks, require these env vars in repo env files before readiness checks:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+`SUPABASE_SERVICE_ROLE_KEY` is server-side only and must never be exposed to client/browser code.
+
 ## Workflow
 
 Preferred default release flow:
 
 1. Open repo in VS Code Web.
 2. If task type is new app creation, create/update planning docs: `architecture.md` and `tasks.md`, then ask the user to review/edit and confirm approval before coding starts.
+   - `architecture.md` must include a dedicated **Pages & Functionality** section that enumerates all planned pages/routes/screens and what each page will do/hold (primary UI responsibilities, data displayed/edited, user actions, and important access/validation notes) so the user can review and approve scope.
+   - For backend/full-stack tasks, include `database-schema.md` as a schema/data-model artifact only (tables, columns/types, keys, indexes, relationships, constraints). Do not include query-focused content in this file.
 3. If task type is existing code edits, do not create `architecture.md` or `tasks.md` by default; provide a concise pre-edit summary in chat (planned changes, likely files/areas, validation plan), then proceed.
 4. Complete prerequisites first: discover all required keys/secrets and verify they are configured in repo env files without exposing values.
-5. If secrets are missing/invalid, run manual handoff to provider dashboards and have the user paste values directly into repo env files in VS Code Web (never in chat), then re-verify.
+   - For Supabase backend tasks, explicitly verify `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are present.
+5. If secrets are missing/invalid for a Strata-capable integration/service, use Strata-first flow before manual dashboard handoff:
+   - If connected, use Strata tools first for supported setup/value retrieval.
+   - If not connected, trigger `suggest_app_connection` and wait.
+   - If connection/setup fails, the user declines, or Strata cannot provide the required values, ask for explicit confirmation, then run manual dashboard handoff and have the user paste values directly into repo env files in VS Code Web (never in chat), then re-verify.
 6. Implement application changes.
 7. Run focused validation for touched code.
 8. For terminal execution, avoid commands that require interactive user input (prompts, password entry, editor sessions, confirmation dialogs, watch-mode prompts). Prefer non-interactive flags and one-shot commands.
