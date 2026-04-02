@@ -30,16 +30,21 @@ export interface ChatServiceDeps {
   browserosId?: string
 }
 
+type ProcessMessageOptions = {
+  skipCodingPrereq?: boolean
+}
+
 export class ChatService {
   constructor(private deps: ChatServiceDeps) {}
 
   async processMessage(
     request: ChatRequest,
     abortSignal: AbortSignal,
+    options?: ProcessMessageOptions,
   ): Promise<Response> {
     const { sessionStore } = this.deps
 
-    if (request.mode === 'coding') {
+    if (request.mode === 'coding' && !options?.skipCodingPrereq) {
       await ensureVsCodeInstalledForCoding()
     }
 
