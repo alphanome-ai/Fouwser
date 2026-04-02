@@ -30,7 +30,7 @@ interface ChatRouteDeps {
 
 async function forwardUIMessageStream(
   response: Response,
-  write: (chunk: string) => Promise<void>,
+  write: (chunk: string) => Promise<unknown> | unknown,
   options?: { skipStart?: boolean },
 ): Promise<void> {
   if (!response.body) {
