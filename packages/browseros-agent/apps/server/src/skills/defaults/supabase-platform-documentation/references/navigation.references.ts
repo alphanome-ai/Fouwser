@@ -6,7 +6,13 @@ const {
   sdkKotlin: sdkKotlinEnabled,
   sdkPython: sdkPythonEnabled,
   sdkSwift: sdkSwiftEnabled,
-} = isFeatureEnabled(['sdk:csharp', 'sdk:dart', 'sdk:kotlin', 'sdk:python', 'sdk:swift'])
+} = isFeatureEnabled([
+  'sdk:csharp',
+  'sdk:dart',
+  'sdk:kotlin',
+  'sdk:python',
+  'sdk:swift',
+])
 
 export const REFERENCES = {
   javascript: {
@@ -175,9 +181,11 @@ export const REFERENCES = {
 } as const
 
 export const clientSdkIds = Object.keys(REFERENCES).filter(
-  (reference) => REFERENCES[reference].type === 'sdk' && REFERENCES[reference].enabled !== false
+  (reference) =>
+    REFERENCES[reference].type === 'sdk' &&
+    REFERENCES[reference].enabled !== false,
 )
 
 export const selfHostingServices = Object.keys(REFERENCES).filter(
-  (reference) => REFERENCES[reference].type === 'self-hosting'
+  (reference) => REFERENCES[reference].type === 'self-hosting',
 )

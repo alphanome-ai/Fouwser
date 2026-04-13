@@ -5,7 +5,7 @@ import {
   Loader2,
   XCircle,
 } from 'lucide-react'
-import type { FC } from 'react'
+import { type FC, useEffect, useState } from 'react'
 import {
   Task,
   TaskContent,
@@ -16,6 +16,10 @@ import type {
   ToolInvocationInfo,
   ToolInvocationState,
 } from './getMessageSegments'
+import {
+  InstallProgressCard,
+  isDownloadProgressTool,
+} from './InstallProgressCard'
 
 interface ToolBatchProps {
   tools: ToolInvocationInfo[]
@@ -45,6 +49,7 @@ export const ToolBatch: FC<ToolBatchProps> = ({
   }, [isStreaming, isLastMessage, isLastBatch, hasUserInteracted])
 
   const completedCount = tools.filter((t) => isToolCompleted(t.state)).length
+  const downloadProgressTools = tools.filter(isDownloadProgressTool)
 
   const onManualToggle = (newState: boolean) => {
     setHasUserInteracted(true)
@@ -52,20 +57,26 @@ export const ToolBatch: FC<ToolBatchProps> = ({
   }
 
   return (
-    <Task open={isOpen} onOpenChange={onManualToggle}>
-      <TaskTrigger
-        title={`${completedCount}/${tools.length} actions completed`}
-        TriggerIcon={BotIcon}
-      />
-      <TaskContent>
-        {tools.map((tool) => (
-          <TaskItem key={tool.toolCallId} className="flex items-center gap-2">
-            <ToolStatusIcon state={tool.state} />
-            <span>{formatToolName(tool.toolName)}</span>
-          </TaskItem>
-        ))}
-      </TaskContent>
-    </Task>
+    <div className="space-y-2">
+      {downloadProgressTools.map((tool) => (
+        <InstallProgressCard key={`download-${tool.toolCallId}`} tool={tool} />
+      ))}
+
+      <Task open={isOpen} onOpenChange={onManualToggle}>
+        <TaskTrigger
+          title={`${completedCount}/${tools.length} actions completed`}
+          TriggerIcon={BotIcon}
+        />
+        <TaskContent>
+          {tools.map((tool) => (
+            <TaskItem key={tool.toolCallId} className="flex items-center gap-2">
+              <ToolStatusIcon state={tool.state} />
+              <span>{formatToolName(tool.toolName)}</span>
+            </TaskItem>
+          ))}
+        </TaskContent>
+      </Task>
+    </div>
   )
 }
 

@@ -14,7 +14,7 @@ export interface ToolInvocationInfo {
   toolCallId: string
   toolName: string
   input: Record<string, unknown>
-  output: unknown[]
+  output: unknown
 }
 
 export type NudgeType = 'schedule_suggestion' | 'app_connection'
@@ -126,7 +126,7 @@ export const getMessageSegments = (
           toolCallId: toolPart.toolCallId,
           toolName,
           input: toolPart?.input ?? {},
-          output: (toolPart?.output as unknown[]) ?? [],
+          output: toolPart?.output,
         })
       }
     }

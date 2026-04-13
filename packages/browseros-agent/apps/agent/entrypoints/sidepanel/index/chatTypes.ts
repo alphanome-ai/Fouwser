@@ -76,19 +76,19 @@ export const CODING_SUGGESTIONS: Suggestion[] = [
     promptTemplate: `Build a modern, production-ready SaaS web app tailored for this company/idea: {{input}}`,
     icon: '📊',
   },
-  {
-    type: 'builder',
-    display: 'Build a landing page for ...',
-    dialogTitle: 'Build a Landing Page',
-    dialogDescription:
-      'Describe your company or idea. This will be turned into a coding prompt.',
-    inputPlaceholder: 'A Browser build specifically for Founders - Fouwsers.',
-    submitLabel: 'Generate',
-    requiredInputError: 'Describe your company or idea first.',
-    promptTemplate: `Act as a senior conversion copywriter and UX strategist.
+  //   {
+  //     type: 'builder',
+  //     display: 'Build a landing page for ...',
+  //     dialogTitle: 'Build a Landing Page',
+  //     dialogDescription:
+  //       'Describe your company or idea. This will be turned into a coding prompt.',
+  //     inputPlaceholder: 'A Browser build specifically for Founders - Fouwsers.',
+  //     submitLabel: 'Generate',
+  //     requiredInputError: 'Describe your company or idea first.',
+  //     promptTemplate: `Act as a senior conversion copywriter and UX strategist.
 
-Create a high-converting landing page for this company/idea:
-{{input}}`,
-    icon: '🛠️',
-  },
+  // Create a high-converting landing page for this company/idea:
+  // {{input}}`,
+  //     icon: '🛠️',
+  //   },
 ]

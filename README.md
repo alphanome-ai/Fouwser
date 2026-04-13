@@ -1,9 +1,9 @@
 <div align="center">
-<img width="350" height="350" alt="fouwser" src="https://raw.githubusercontent.com/alphanome-ai/assets/main/fouwser/logo.png" />
-<br />
+<img width="600" height="380" alt="fouwser" src="https://raw.githubusercontent.com/alphanome-ai/assets/main/fouwser/fouwser-cartoon.png" />
+<br>
 </div>
 
-##
+## FOUWSER
 🌐 Fouwser is an open-source Chromium fork that runs AI agents natively.
 
 🔒 Use your own API keys or run local models with Ollama. Your data never leaves your machine.
