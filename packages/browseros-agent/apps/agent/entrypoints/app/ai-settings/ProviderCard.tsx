@@ -79,7 +79,7 @@ export const ProviderCard: FC<ProviderCardProps> = ({
             </Badge>
           )}
         </div>
-        {isBuiltIn && provider.type === 'browseros' && kimiLaunch && (
+        {isBuiltIn && provider.type === 'fouwser' && kimiLaunch && (
           <span className="mb-1 inline-block rounded-full border border-orange-300/60 bg-orange-100/70 px-3 py-0.5 font-semibold text-orange-700 text-xs dark:border-orange-400/40 dark:bg-orange-500/15 dark:text-orange-300">
             In partnership with Moonshot AI
           </span>
@@ -88,16 +88,16 @@ export const ProviderCard: FC<ProviderCardProps> = ({
           {isBuiltIn ? (
             <>
               Fouwser-hosted model with strict rate limits.{' '}
-              <a
-                href="https://docs.browseros.com/features/bring-your-own-llm"
+              {/* <a
+                href=""
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-foreground"
                 onClick={(e) => e.stopPropagation()}
               >
                 Bring your own key
-              </a>{' '}
-              for better performance.
+              </a>{' '} */}
+              Connect your own Provider for better rate limits.
             </>
           ) : (
             `${provider.modelId} • ${provider.baseUrl}`

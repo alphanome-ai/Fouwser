@@ -46,7 +46,7 @@ export const NewTabChatHeader: FC<NewTabChatHeaderProps> = ({
             className="group relative inline-flex cursor-pointer items-center gap-2 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground data-[state=open]:bg-accent"
             title="Change AI Provider"
           >
-            {selectedProvider.type === 'browseros' ? (
+            {selectedProvider.type === 'fouwser' ? (
               <BrowserOSIcon size={18} />
             ) : (
               <ProviderIcon

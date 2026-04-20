@@ -15,7 +15,7 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import { LLM_PROVIDERS } from '@browseros/shared/schemas/llm'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import type { LanguageModel } from 'ai'
-import { logger } from '../../logger'
+import { createFouwserLanguageModel } from './fouwser-model'
 import { createOpenRouterCompatibleFetch } from '../../openrouter-fetch'
 import type { ResolvedLLMConfig } from './types'
 
@@ -88,30 +88,11 @@ function createBedrockModel(config: ResolvedLLMConfig): LanguageModel {
 }
 
 function createBrowserOSModel(config: ResolvedLLMConfig): LanguageModel {
-  if (!config.baseUrl) throw new Error('BrowserOS provider requires baseUrl')
-  const { baseUrl, apiKey, model, upstreamProvider } = config
+  return createFouwserLanguageModel(config) as LanguageModel
+}
 
-  if (upstreamProvider === LLM_PROVIDERS.OPENROUTER) {
-    return createOpenRouter({
-      baseURL: baseUrl,
-      ...(apiKey && { apiKey }),
-      fetch: createOpenRouterCompatibleFetch(),
-    })(model)
-  }
-  if (upstreamProvider === LLM_PROVIDERS.ANTHROPIC) {
-    return createAnthropic({ baseURL: baseUrl, ...(apiKey && { apiKey }) })(
-      model,
-    )
-  }
-  if (upstreamProvider === LLM_PROVIDERS.AZURE) {
-    return createAzure({ baseURL: baseUrl, ...(apiKey && { apiKey }) })(model)
-  }
-  logger.debug('Creating OpenAI-compatible provider for BrowserOS')
-  return createOpenAICompatible({
-    name: 'browseros',
-    baseURL: baseUrl,
-    ...(apiKey && { apiKey }),
-  })(model)
+function createFouwserModel(config: ResolvedLLMConfig): LanguageModel {
+  return createFouwserLanguageModel(config) as LanguageModel
 }
 
 function createOpenAICompatibleModel(config: ResolvedLLMConfig): LanguageModel {
@@ -156,6 +137,7 @@ const PROVIDER_FACTORIES: Record<string, ProviderFactory> = {
   [LLM_PROVIDERS.OLLAMA]: createOllamaModel,
   [LLM_PROVIDERS.LMSTUDIO]: createLMStudioModel,
   [LLM_PROVIDERS.BEDROCK]: createBedrockModel,
+  [LLM_PROVIDERS.FOUWSER]: createFouwserModel,
   [LLM_PROVIDERS.BROWSEROS]: createBrowserOSModel,
   [LLM_PROVIDERS.OPENAI_COMPATIBLE]: createOpenAICompatibleModel,
   [LLM_PROVIDERS.MOONSHOT]: createMoonshotModel,

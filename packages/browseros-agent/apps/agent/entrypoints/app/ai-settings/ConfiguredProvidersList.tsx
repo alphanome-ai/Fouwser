@@ -27,7 +27,7 @@ export const ConfiguredProvidersList: FC<ConfiguredProvidersListProps> = ({
   return (
     <div className="space-y-3">
       {providers.map((provider) => {
-        const isBuiltIn = provider.id === 'browseros'
+        const isBuiltIn = provider.id === 'fouwser'
 
         return (
           <ProviderCard

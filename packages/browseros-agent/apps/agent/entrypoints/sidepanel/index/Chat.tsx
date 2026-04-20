@@ -51,6 +51,8 @@ export const Chat = () => {
     disliked,
     onClickDislike,
     isRestoringConversation,
+    requiresChatSignIn,
+    openFouwserSignIn,
   } = useChatSessionContext()
 
   const {
@@ -133,6 +135,10 @@ export const Chat = () => {
   const executeMessage = (customMessageText?: string) => {
     const messageText = customMessageText ? customMessageText : input.trim()
     if (!messageText) return
+    if (requiresChatSignIn) {
+      void openFouwserSignIn()
+      return
+    }
     if (mode === 'coding' && !selectedFolder) {
       toast.error('Select a working directory to send coding requests.')
       return
@@ -146,9 +152,11 @@ export const Chat = () => {
         message: messageText,
         tabs: attachedTabs,
       })
-      sendMessage({ text: messageText, action })
+      const wasSent = sendMessage({ text: messageText, action })
+      if (!wasSent) return
     } else {
-      sendMessage({ text: messageText })
+      const wasSent = sendMessage({ text: messageText })
+      if (!wasSent) return
     }
     setInput('')
     setAttachedTabs([])
@@ -275,6 +283,10 @@ export const Chat = () => {
         attachedTabs={attachedTabs}
         onToggleTab={toggleTabSelection}
         onRemoveTab={removeTab}
+        requiresChatSignIn={requiresChatSignIn}
+        onSignInToFouwser={() => {
+          void openFouwserSignIn()
+        }}
       />
     </>
   )

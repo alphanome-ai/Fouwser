@@ -3,20 +3,41 @@ import type { FC } from 'react'
 import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 
-const SURVEY_DIRECTIONS = [
-  'competitor',
-  'switching',
-  'workflow',
-  'activation',
-] as const
-
-function pickRandomDirection(): string {
-  return SURVEY_DIRECTIONS[Math.floor(Math.random() * SURVEY_DIRECTIONS.length)]
-}
-
 interface ChatErrorProps {
   error: Error
   onRetry?: () => void
+}
+
+interface ParsedErrorPayload {
+  error?: {
+    message?: string
+    code?: string
+    statusCode?: number
+  }
+}
+
+function parseEmbeddedErrorPayload(message: string): ParsedErrorPayload | null {
+  const candidateMessages = [message]
+  const embeddedErrorIndex = message.indexOf('{"error":')
+  if (embeddedErrorIndex >= 0) {
+    candidateMessages.push(message.slice(embeddedErrorIndex))
+  }
+
+  const genericJsonIndex = message.indexOf('{')
+  if (
+    genericJsonIndex >= 0 &&
+    genericJsonIndex !== embeddedErrorIndex
+  ) {
+    candidateMessages.push(message.slice(genericJsonIndex))
+  }
+
+  for (const candidate of candidateMessages) {
+    try {
+      return JSON.parse(candidate) as ParsedErrorPayload
+    } catch {}
+  }
+
+  return null
 }
 
 function parseErrorMessage(message: string): {
@@ -37,20 +58,26 @@ function parseErrorMessage(message: string): {
     }
   }
 
-  // Detect BrowserOS rate limit (unique pattern, no provider uses this)
-  if (message.includes('Fouwser LLM daily limit reached')) {
+  const parsedPayload = parseEmbeddedErrorPayload(message)
+  const parsedMessage = parsedPayload?.error?.message
+  const parsedCode = parsedPayload?.error?.code
+  const parsedStatusCode = parsedPayload?.error?.statusCode
+
+  // Detect Fouwser-hosted usage limit responses from both local and hosted paths.
+  if (
+    message.includes('Fouwser LLM daily limit reached') ||
+    parsedCode === 'RATE_LIMIT_EXCEEDED' ||
+    parsedStatusCode === 429 ||
+    parsedMessage?.includes('User rate limit exceeded') ||
+    message.includes('429 Too Many Requests')
+  ) {
     return {
-      text: 'Add your own API key for unlimited usage.',
-      url: 'https://dub.sh/browseros-usage-limit',
+      text: 'You have reached the current Fouwser usage limit. Try again after your daily quota window resets, or switch to your own API key in AI settings.',
       isRateLimit: true,
     }
   }
 
-  let text = message
-  try {
-    const parsed = JSON.parse(message)
-    if (parsed?.error?.message) text = parsed.error.message
-  } catch {}
+  let text = parsedMessage ?? message
 
   // Extract URL if present
   const urlMatch = text.match(/https?:\/\/[^\s]+/)
@@ -67,14 +94,13 @@ export const ChatError: FC<ChatErrorProps> = ({ error, onRetry }) => {
     error.message,
   )
 
-  const surveyUrl = useMemo(
-    () =>
-      `/app.html?page=survey&maxTurns=20&experimentId=daily_limit_${pickRandomDirection()}#/settings/survey`,
+  const aiSettingsUrl = useMemo(
+    () => new URL('/app.html#/settings/ai', window.location.origin).toString(),
     [],
   )
 
   const getTitle = () => {
-    if (isRateLimit) return 'Daily limit reached'
+    if (isRateLimit) return 'Usage limit reached'
     if (isConnectionError) return 'Connection failed'
     return 'Something went wrong'
   }
@@ -99,22 +125,22 @@ export const ChatError: FC<ChatErrorProps> = ({ error, onRetry }) => {
       {isRateLimit && (
         <p className="text-muted-foreground text-xs">
           <a
+            href={aiSettingsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground"
+          >
+            Open AI settings
+          </a>
+          {/* {' or '}
+          <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
             className="underline hover:text-foreground"
           >
             Learn more
-          </a>
-          {' or '}
-          <a
-            href={surveyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-foreground"
-          >
-            take a quick survey
-          </a>
+          </a> */}
         </p>
       )}
       {onRetry && (

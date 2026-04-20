@@ -32,6 +32,8 @@ export {
 export const AgentLLMConfigSchema = LLMConfigSchema.extend({
   model: z.string().min(1, 'Model name is required'),
   upstreamProvider: z.string().optional(),
+  authToken: z.string().optional(),
+  publicApiBaseUrl: z.string().url().optional(),
 })
 
 export type AgentLLMConfig = z.infer<typeof AgentLLMConfigSchema>

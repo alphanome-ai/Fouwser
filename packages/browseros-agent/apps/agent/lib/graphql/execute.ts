@@ -1,4 +1,5 @@
 import type { TypedDocumentString } from '@/generated/graphql/graphql'
+import { getAccessToken } from '@/lib/auth/auth-client'
 import { env } from '../env'
 
 export async function execute<TResult, TVariables = undefined>(
@@ -8,6 +9,10 @@ export async function execute<TResult, TVariables = undefined>(
   const headers = new Headers()
   headers.set('Content-Type', 'application/json')
   headers.set('Accept', 'application/graphql-response+json')
+  const accessToken = await getAccessToken()
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`)
+  }
 
   const response = await fetch(`${env.VITE_PUBLIC_BROWSEROS_API}/graphql`, {
     method: 'POST',
@@ -16,7 +21,6 @@ export async function execute<TResult, TVariables = undefined>(
       query,
       variables,
     }),
-    credentials: 'include',
   })
 
   if (!response.ok) {

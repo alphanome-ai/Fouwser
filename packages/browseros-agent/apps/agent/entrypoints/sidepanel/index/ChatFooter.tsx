@@ -3,6 +3,7 @@ import type { FC, FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { AppSelector } from '@/components/elements/AppSelector'
 import { WorkspaceSelector } from '@/components/elements/workspace-selector'
+import { Button } from '@/components/ui/button'
 import { McpServerIcon } from '@/entrypoints/app/connect-mcp/McpServerIcon'
 import { useGetUserMCPIntegrations } from '@/entrypoints/app/connect-mcp/useGetUserMCPIntegrations'
 import { Feature } from '@/lib/browseros/capabilities'
@@ -27,6 +28,8 @@ interface ChatFooterProps {
   attachedTabs: chrome.tabs.Tab[]
   onToggleTab: (tab: chrome.tabs.Tab) => void
   onRemoveTab: (tabId?: number) => void
+  requiresChatSignIn?: boolean
+  onSignInToFouwser?: () => void
 }
 
 export const ChatFooter: FC<ChatFooterProps> = ({
@@ -40,6 +43,8 @@ export const ChatFooter: FC<ChatFooterProps> = ({
   attachedTabs,
   onToggleTab,
   onRemoveTab,
+  requiresChatSignIn = false,
+  onSignInToFouwser,
 }) => {
   const { selectedFolder } = useWorkspace()
   const { supports } = useCapabilities()
@@ -77,12 +82,36 @@ export const ChatFooter: FC<ChatFooterProps> = ({
     )?.is_authenticated
   })
   const isCodingWithoutWorkspace = mode === 'coding' && !selectedFolder
+  const submitDisabledReason = requiresChatSignIn
+    ? 'Sign in to Fouwser to use agent chat.'
+    : isCodingWithoutWorkspace
+      ? 'Select a working directory to send coding requests.'
+      : undefined
 
   return (
     <footer className="border-border/40 border-t bg-background/80 backdrop-blur-md">
       <ChatAttachedTabs tabs={attachedTabs} onRemoveTab={onRemoveTab} />
 
       <div className="p-3">
+        {requiresChatSignIn && (
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/40 px-3 py-2.5">
+            <div className="min-w-0">
+              <div className="font-medium text-sm">Sign in to Fouwser</div>
+              <div className="text-muted-foreground text-xs">
+                Agent chat is available after you sign in.
+              </div>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              onClick={onSignInToFouwser}
+              className="shrink-0"
+            >
+              Sign in
+            </Button>
+          </div>
+        )}
+
         {supports(Feature.WORKSPACE_FOLDER_SUPPORT) && selectedFolder && (
           <div
             className="mb-2 flex items-center gap-1.5 text-muted-foreground text-xs"
@@ -193,11 +222,7 @@ export const ChatFooter: FC<ChatFooterProps> = ({
           input={input}
           status={status}
           mode={mode}
-          submitDisabledReason={
-            isCodingWithoutWorkspace
-              ? 'Select a working directory to send coding requests.'
-              : undefined
-          }
+          submitDisabledReason={submitDisabledReason}
           onInputChange={onInputChange}
           onSubmit={onSubmit}
           onStop={onStop}

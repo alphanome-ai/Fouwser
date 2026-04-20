@@ -20,16 +20,16 @@ export interface ProviderTemplate {
  * @public
  */
 export const providerTemplates: ProviderTemplate[] = [
-  {
-    id: 'moonshot',
-    name: 'Moonshot AI',
-    defaultBaseUrl: 'https://api.moonshot.ai/v1',
-    defaultModelId: 'kimi-k2.5',
-    supportsImages: true,
-    contextWindow: 200000,
-    apiKeyUrl: 'https://platform.moonshot.ai/console/api-keys',
-    setupGuideUrl: 'https://platform.moonshot.ai/console/api-keys',
-  },
+  // {
+  //   id: 'moonshot',
+  //   name: 'Moonshot AI',
+  //   defaultBaseUrl: 'https://api.moonshot.ai/v1',
+  //   defaultModelId: 'kimi-k2.5',
+  //   supportsImages: true,
+  //   contextWindow: 200000,
+  //   apiKeyUrl: 'https://platform.moonshot.ai/console/api-keys',
+  //   setupGuideUrl: 'https://platform.moonshot.ai/console/api-keys',
+  // },
   {
     id: 'openai',
     name: 'OpenAI',
@@ -137,7 +137,7 @@ export const providerTemplates: ProviderTemplate[] = [
  * @public
  */
 export const providerTypeOptions: { value: ProviderType; label: string }[] = [
-  { value: 'moonshot', label: 'Moonshot AI' },
+  // { value: 'moonshot', label: 'Moonshot AI' },
   { value: 'anthropic', label: 'Anthropic' },
   { value: 'openai', label: 'OpenAI' },
   { value: 'openai-compatible', label: 'OpenAI Compatible' },

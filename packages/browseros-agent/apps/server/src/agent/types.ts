@@ -11,6 +11,8 @@ export interface ProviderConfig {
   apiKey?: string
   baseUrl?: string
   upstreamProvider?: string
+  authToken?: string
+  publicApiBaseUrl?: string
   resourceName?: string
   region?: string
   accessKeyId?: string
@@ -25,6 +27,8 @@ export interface ResolvedAgentConfig {
   apiKey?: string
   baseUrl?: string
   upstreamProvider?: string
+  authToken?: string
+  publicApiBaseUrl?: string
   resourceName?: string
   region?: string
   accessKeyId?: string

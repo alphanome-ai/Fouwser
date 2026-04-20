@@ -1,18 +1,21 @@
-import { AlertCircle, CheckCircle2, Loader2, Mail } from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { signIn } from '@/lib/auth/auth-client'
+import {
+  login,
+  loginWithGoogle,
+  register,
+} from '@/lib/auth/auth-client'
 import {
   ONBOARDING_SIGNIN_COMPLETED_EVENT,
   ONBOARDING_SIGNIN_SKIPPED_EVENT,
   ONBOARDING_STEP_COMPLETED_EVENT,
 } from '@/lib/constants/analyticsEvents'
 import { track } from '@/lib/metrics/track'
-import { authRedirectPathStorage } from '@/lib/onboarding/onboardingStorage'
 import { type StepDirection, StepTransition } from './StepTransition'
 
 interface StepTwoProps {
@@ -20,12 +23,23 @@ interface StepTwoProps {
   onContinue: () => void
 }
 
-type SignInState = 'idle' | 'loading' | 'magic-link-sent' | 'error'
+type AuthMode = 'signin' | 'signup'
+type SignInState = 'idle' | 'loading' | 'error'
 
 export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
+  const [mode, setMode] = useState<AuthMode>('signin')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [state, setState] = useState<SignInState>('idle')
   const [error, setError] = useState<string | null>(null)
+
+  const completeStep = (method: string) => {
+    track(ONBOARDING_SIGNIN_COMPLETED_EVENT, { method })
+    track(ONBOARDING_STEP_COMPLETED_EVENT, { step: 4, step_name: 'signin' })
+    onContinue()
+  }
 
   const handleSkip = () => {
     track(ONBOARDING_SIGNIN_SKIPPED_EVENT)
@@ -37,94 +51,44 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
     onContinue()
   }
 
-  const handleMagicLink = async (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim()) return
-
     setState('loading')
     setError(null)
 
     try {
-      const result = await signIn.magicLink({
-        email: email.trim(),
-        callbackURL: '/home',
-      })
-
-      if (result.error) {
-        setState('error')
-        setError(result.error.message || 'Failed to send magic link')
-        return
+      if (mode === 'signup') {
+        await register({
+          firstName,
+          lastName,
+          email,
+          password,
+        })
+      } else {
+        await login({
+          email,
+          password,
+        })
       }
 
-      setState('magic-link-sent')
-      track(ONBOARDING_SIGNIN_COMPLETED_EVENT, { method: 'magic_link' })
-      track(ONBOARDING_STEP_COMPLETED_EVENT, { step: 4, step_name: 'signin' })
+      completeStep(mode === 'signup' ? 'password_signup' : 'password')
     } catch (err) {
       setState('error')
-      setError(err instanceof Error ? err.message : 'Failed to send magic link')
+      setError(err instanceof Error ? err.message : 'Authentication failed')
     }
   }
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleAuth = async () => {
     setState('loading')
     setError(null)
 
     try {
-      track(ONBOARDING_SIGNIN_COMPLETED_EVENT, { method: 'google' })
-      track(ONBOARDING_STEP_COMPLETED_EVENT, { step: 4, step_name: 'signin' })
-
-      await authRedirectPathStorage.setValue('/onboarding/demo')
-      await signIn.social({
-        provider: 'google',
-        callbackURL: '/home',
-      })
+      await loginWithGoogle()
+      completeStep(mode === 'signup' ? 'google_signup' : 'google')
     } catch (err) {
       setState('error')
-      setError(
-        err instanceof Error ? err.message : 'Failed to sign in with Google',
-      )
+      setError(err instanceof Error ? err.message : 'Google sign-in failed')
     }
-  }
-
-  if (state === 'magic-link-sent') {
-    return (
-      <StepTransition direction={direction}>
-        <div className="flex min-h-[550px] flex-col items-center justify-start pt-2 md:justify-center md:pt-0">
-          <div className="w-full max-w-md space-y-6 text-center">
-            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <CheckCircle2 className="size-6 text-green-600 dark:text-green-400" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="font-bold text-2xl tracking-tight">
-                Check your email
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                We sent a magic link to <strong>{email}</strong>. Click the link
-                to sign in.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setState('idle')
-                  setEmail('')
-                }}
-              >
-                Use a different email
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={onContinue}
-                className="text-muted-foreground"
-              >
-                Continue without signing in
-              </Button>
-            </div>
-          </div>
-        </div>
-      </StepTransition>
-    )
   }
 
   return (
@@ -133,11 +97,11 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
         <div className="w-full max-w-md space-y-6">
           <div className="space-y-2 text-center">
             <h2 className="font-bold text-3xl tracking-tight">
-              Sign in to Fouwser
+              {mode === 'signup' ? 'Create your Fouwser account' : 'Sign in to Fouwser'}
             </h2>
-            <p className="text-base text-muted-foreground">
+            {/* <p className="text-base text-muted-foreground">
               Sync your settings and unlock cloud features
-            </p>
+            </p> */}
           </div>
 
           {error && (
@@ -150,7 +114,7 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
           <Button
             variant="outline"
             className="w-full"
-            onClick={handleGoogleSignIn}
+            onClick={handleGoogleAuth}
             disabled={state === 'loading'}
           >
             {state === 'loading' ? (
@@ -158,7 +122,7 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
             ) : (
               <GoogleIcon />
             )}
-            Continue with Google
+            {mode === 'signup' ? 'Sign up with Google' : 'Continue with Google'}
           </Button>
 
           <div className="relative">
@@ -172,7 +136,32 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
             </div>
           </div>
 
-          <form onSubmit={handleMagicLink} className="space-y-4">
+          <form onSubmit={handleEmailAuth} className="space-y-4">
+            {mode === 'signup' && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="signin-first-name">First name</Label>
+                  <Input
+                    id="signin-first-name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    disabled={state === 'loading'}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signin-last-name">Last name</Label>
+                  <Input
+                    id="signin-last-name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    disabled={state === 'loading'}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="signin-email">Email</Label>
               <Input
@@ -185,28 +174,52 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="signin-password">Password</Label>
+              <Input
+                id="signin-password"
+                type="password"
+                placeholder={
+                  mode === 'signup' ? 'At least 8 characters' : 'Enter your password'
+                }
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={state === 'loading'}
+                minLength={mode === 'signup' ? 8 : undefined}
+                required
+              />
+            </div>
+
             <Button
               type="submit"
               className="w-full bg-primary text-white hover:bg-primary/90"
-              disabled={state === 'loading' || !email.trim()}
+              disabled={state === 'loading'}
             >
               {state === 'loading' ? (
                 <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Mail className="size-4" />
-              )}
-              Send Magic Link
+              ) : null}
+              {mode === 'signup' ? 'Create account' : 'Sign in'}
             </Button>
           </form>
 
-          <div className="text-center">
+          <div className="space-y-3 text-center">
             <Button
+              variant="ghost"
+              className="text-muted-foreground"
+              onClick={() => setMode((current) => (current === 'signup' ? 'signin' : 'signup'))}
+            >
+              {mode === 'signup'
+                ? 'Already have an account? Sign in'
+                : "Don't have an account? Sign up"}
+            </Button>
+            {/* <Button
               variant="ghost"
               onClick={handleSkip}
               className="text-muted-foreground"
             >
               Skip for now
-            </Button>
+            </Button> */}
           </div>
         </div>
       </div>

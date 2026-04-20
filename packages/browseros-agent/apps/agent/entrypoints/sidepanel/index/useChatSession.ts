@@ -28,6 +28,9 @@ import { track } from '@/lib/metrics/track'
 import { searchActionsStorage } from '@/lib/search-actions/searchActionsStorage'
 import { stopAgentStorage } from '@/lib/stop-agent/stop-agent-storage'
 import { selectedWorkspaceStorage } from '@/lib/workspace/workspace-storage'
+import { getSession } from '@/lib/auth/auth-client'
+import { sessionStorage, useSessionInfo } from '@/lib/auth/sessionStorage'
+import { env } from '@/lib/env'
 import type { ChatMode } from './chatTypes'
 import { GetConversationWithMessagesDocument } from './graphql/chatSessionDocument'
 import { useChatRefs } from './useChatRefs'
@@ -84,6 +87,7 @@ export const useChatSession = (options?: ChatSessionOptions) => {
   } = useChatRefs()
 
   const { providers: llmProviders, setDefaultProvider } = useLlmProviders()
+  const { sessionInfo, isLoading: isLoadingSessionInfo } = useSessionInfo()
 
   const {
     baseUrl: agentServerUrl,
@@ -185,11 +189,19 @@ export const useChatSession = (options?: ChatSessionOptions) => {
         id: selectedLlmProvider.id,
         name: selectedLlmProvider.name,
         type:
-          selectedLlmProvider.id === 'browseros'
-            ? ('browseros' as const)
+          selectedLlmProvider.id === 'fouwser'
+            ? ('fouwser' as const)
             : selectedLlmProvider.type,
       }
     : providers[0]
+
+  const requiresChatSignIn = !isLoadingSessionInfo && !sessionInfo.user?.id
+
+  const openFouwserSignIn = async () => {
+    await chrome.tabs.create({
+      url: chrome.runtime.getURL('app.html#/login'),
+    })
+  }
 
   const {
     messages,
@@ -209,6 +221,10 @@ export const useChatSession = (options?: ChatSessionOptions) => {
         const activeTab = activeTabsList?.[0] ?? undefined
         const message = getLastMessageText(messages)
         const provider = selectedLlmProviderRef.current
+        const sessionInfo =
+          provider?.type === 'fouwser'
+            ? await getSession({ forceRefresh: true })
+            : await sessionStorage.getValue()
         const currentMode = modeRef.current
         const enabledMcpServers = enabledMcpServersRef.current
         const customMcpServers = enabledCustomServersRef.current
@@ -292,6 +308,14 @@ export const useChatSession = (options?: ChatSessionOptions) => {
             providerName: provider?.name,
             apiKey: provider?.apiKey,
             baseUrl: provider?.baseUrl,
+            authToken:
+              provider?.type === 'fouwser'
+                ? sessionInfo?.session?.accessToken
+                : undefined,
+            publicApiBaseUrl:
+              provider?.type === 'fouwser'
+                ? env.VITE_PUBLIC_BROWSEROS_API
+                : undefined,
             conversationId: conversationIdRef.current,
             model: provider?.modelId ?? 'default',
             mode: currentMode,
@@ -421,6 +445,11 @@ export const useChatSession = (options?: ChatSessionOptions) => {
   }, [status])
 
   const sendMessage = (params: { text: string; action?: ChatAction }) => {
+    if (requiresChatSignIn) {
+      void openFouwserSignIn()
+      return false
+    }
+
     track(MESSAGE_SENT_EVENT, {
       mode,
       provider_type: selectedLlmProvider?.type,
@@ -435,6 +464,7 @@ export const useChatSession = (options?: ChatSessionOptions) => {
       })
     }
     baseSendMessage({ text: params.text })
+    return true
   }
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: only need to run this once
@@ -505,6 +535,8 @@ export const useChatSession = (options?: ChatSessionOptions) => {
     isRestoringConversation,
     agentUrlError,
     chatError,
+    requiresChatSignIn,
+    openFouwserSignIn,
     handleSelectProvider,
     getActionForMessage,
     resetConversation,

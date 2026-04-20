@@ -1,14 +1,14 @@
-// import { ChevronDown, LogIn, LogOut, User } from 'lucide-react'
+import { ChevronDown, LogIn, LogOut, User } from 'lucide-react'
 import type { FC } from 'react'
-// import { useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import ProductLogo from '@/assets/product_logo.svg'
 import { ThemeToggle } from '@/components/elements/theme-toggle'
 import {
   DropdownMenu,
-  // DropdownMenuContent,
-  // DropdownMenuItem,
-  // DropdownMenuLabel,
-  // DropdownMenuSeparator,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { GetProfileByUserIdDocument } from '@/entrypoints/app/profile/graphql/profileDocument'
@@ -26,7 +26,7 @@ export const SidebarBranding: FC<SidebarBrandingProps> = ({
 }) => {
   const { selectedFolder } = useWorkspace()
   const { sessionInfo } = useSessionInfo()
-  // const navigate = useNavigate()
+  const navigate = useNavigate()
 
   const user = sessionInfo?.user
   const isLoggedIn = !!user
@@ -93,9 +93,9 @@ export const SidebarBranding: FC<SidebarBrandingProps> = ({
                 <span className="truncate font-semibold">
                   {isLoggedIn ? displayName : selectedFolder?.name || 'Fouwser'}
                 </span>
-                {/* <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" /> */}
+                <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
               </div>
-              {/* <span
+              <span
                 className={cn(
                   'truncate text-xs',
                   isLoggedIn
@@ -104,11 +104,11 @@ export const SidebarBranding: FC<SidebarBrandingProps> = ({
                 )}
               >
                 {isLoggedIn ? 'Personal' : 'Sign in'}
-              </span> */}
+              </span>
             </div>
           </button>
         </DropdownMenuTrigger>
-        {/* <DropdownMenuContent
+        <DropdownMenuContent
           side={expanded ? 'bottom' : 'right'}
           align="start"
           className="w-56"
@@ -125,11 +125,11 @@ export const SidebarBranding: FC<SidebarBrandingProps> = ({
                   </p>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/profile')}>
+              {/* <DropdownMenuSeparator /> */}
+              {/* <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <User className="mr-2 size-4" />
                 Update Profile
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => navigate('/logout')}
@@ -145,7 +145,7 @@ export const SidebarBranding: FC<SidebarBrandingProps> = ({
               Sign in
             </DropdownMenuItem>
           )}
-        </DropdownMenuContent> */}
+        </DropdownMenuContent>
       </DropdownMenu>
       <div
         className={cn(

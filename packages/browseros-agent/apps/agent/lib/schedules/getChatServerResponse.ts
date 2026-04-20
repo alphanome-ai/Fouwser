@@ -1,5 +1,7 @@
 import { createParser, type EventSourceMessage } from 'eventsource-parser'
 import type { ChatMode } from '@/entrypoints/sidepanel/index/chatTypes'
+import { getSession } from '@/lib/auth/auth-client'
+import { env } from '@/lib/env'
 import { getAgentServerUrl } from '@/lib/browseros/helpers'
 import {
   defaultProviderIdStorage,
@@ -81,6 +83,10 @@ export async function getChatServerResponse(
   const provider = await getDefaultProvider()
   const conversationId = request.conversationId ?? crypto.randomUUID()
   const personalization = await personalizationStorage.getValue()
+  const sessionInfo =
+    provider?.type === 'fouwser'
+      ? await getSession({ forceRefresh: true })
+      : null
 
   const mcpServers = (await mcpServerStorage.getValue()) ?? []
   const enabledMcpServers = mcpServers
@@ -107,6 +113,14 @@ export async function getChatServerResponse(
       providerName: provider?.name,
       apiKey: provider?.apiKey,
       baseUrl: provider?.baseUrl,
+      authToken:
+        provider?.type === 'fouwser'
+          ? sessionInfo?.session?.accessToken
+          : undefined,
+      publicApiBaseUrl:
+        provider?.type === 'fouwser'
+          ? env.VITE_PUBLIC_BROWSEROS_API
+          : undefined,
       conversationId,
       model: provider?.modelId ?? 'default',
       mode: request.mode ?? 'agent',

@@ -57,6 +57,7 @@ export default defineConfig({
       'tabs',
       'storage',
       'sidePanel',
+      'identity',
       'browserOS',
       'alarms',
     ],

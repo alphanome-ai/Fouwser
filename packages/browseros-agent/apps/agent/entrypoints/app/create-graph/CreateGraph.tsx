@@ -28,6 +28,8 @@ import {
   GRAPH_UPDATED_EVENT,
   NEW_GRAPH_CREATED_EVENT,
 } from '@/lib/constants/analyticsEvents'
+import { getSession } from '@/lib/auth/auth-client'
+import { env } from '@/lib/env'
 import { useLlmProviders } from '@/lib/llm-providers/useLlmProviders'
 import { track } from '@/lib/metrics/track'
 import { useRpcClient } from '@/lib/rpc/RpcClientProvider'
@@ -211,6 +213,10 @@ export const CreateGraph: FC = () => {
 
         if (metadata?.messageType === 'run-graph' && codeIdRef.current) {
           const provider = selectedLlmProviderRef.current
+            const sessionInfo =
+              provider?.type === 'fouwser'
+                ? await getSession({ forceRefresh: true })
+                : null
           const enabledMcpServers = enabledMcpServersRef.current
           const customMcpServers = enabledCustomServersRef.current
 
@@ -220,7 +226,7 @@ export const CreateGraph: FC = () => {
               provider: provider?.type,
               providerType: provider?.type,
               providerName: provider?.name,
-              model: provider?.modelId ?? 'browseros',
+              model: provider?.modelId ?? 'default',
               contextWindowSize: provider?.contextWindow,
               temperature: provider?.temperature,
               resourceName: provider?.resourceName,
@@ -231,6 +237,14 @@ export const CreateGraph: FC = () => {
               sessionToken: provider?.sessionToken,
               apiKey: provider?.apiKey,
               baseUrl: provider?.baseUrl,
+              authToken:
+                provider?.type === 'fouwser'
+                  ? sessionInfo?.session?.accessToken
+                  : undefined,
+              publicApiBaseUrl:
+                provider?.type === 'fouwser'
+                  ? env.VITE_PUBLIC_BROWSEROS_API
+                  : undefined,
               browserContext: {
                 windowId: metadata?.window?.id,
                 activeTab: metadata?.window?.tabs?.[0],

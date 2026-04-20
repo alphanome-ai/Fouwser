@@ -5,6 +5,8 @@
 
 import { logger } from '../logger'
 
+const CONFIG_CACHE_TTL_MINUTES = 60 * 5
+
 export interface Provider {
   name: string
   model: string
@@ -26,61 +28,120 @@ export interface LLMConfig {
   providerType?: string
 }
 
+interface CachedBrowserOSConfig {
+  config: BrowserOSConfig
+  expiresAt: number
+}
+
+const browserosConfigCache = new Map<string, CachedBrowserOSConfig>()
+const browserosConfigInFlight = new Map<string, Promise<BrowserOSConfig>>()
+
+function getBrowserOSConfigCacheKey(
+  configUrl: string,
+  browserosId?: string,
+  authToken?: string,
+): string {
+  return JSON.stringify([configUrl, browserosId ?? '', authToken ?? ''])
+}
+
 export async function fetchBrowserOSConfig(
   configUrl: string,
   browserosId?: string,
+  authToken?: string,
 ): Promise<BrowserOSConfig> {
-  logger.debug('Fetching BrowserOS config', { configUrl, browserosId })
+  const cacheKey = getBrowserOSConfigCacheKey(configUrl, browserosId, authToken)
+  const cachedConfig = browserosConfigCache.get(cacheKey)
+  if (cachedConfig && Date.now() < cachedConfig.expiresAt) {
+    logger.debug('Using cached BrowserOS config', { configUrl, browserosId })
+    return cachedConfig.config
+  }
+
+  const inFlightRequest = browserosConfigInFlight.get(cacheKey)
+  if (inFlightRequest) {
+    logger.debug('Awaiting in-flight BrowserOS config request', {
+      configUrl,
+      browserosId,
+    })
+    return inFlightRequest
+  }
+
+  logger.debug('Fetching Fouwser config', { configUrl, browserosId })
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   }
 
   if (browserosId) {
-    headers['X-BrowserOS-ID'] = browserosId
+    headers['X-Fouwser-ID'] = browserosId
   }
+
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`
+  }
+
+  const request = (async () => {
+    try {
+      const response = await fetch(configUrl, {
+        method: 'GET',
+        headers,
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(
+          `Failed to fetch config: ${response.status} ${response.statusText} - ${errorText}`,
+        )
+      }
+
+      const config = (await response.json()) as BrowserOSConfig
+
+      if (!Array.isArray(config.providers) || config.providers.length === 0) {
+        throw new Error(
+          'Invalid config response: providers array is empty or missing',
+        )
+      }
+
+      for (const provider of config.providers) {
+        if (!provider.name || !provider.model || !provider.apiKey) {
+          throw new Error('Invalid provider: missing name, model, or apiKey')
+        }
+      }
+
+      browserosConfigCache.set(cacheKey, {
+        config,
+        expiresAt: Date.now() + CONFIG_CACHE_TTL_MINUTES,
+      })
+
+      const defaultProvider = config.providers.find((p) => p.name === 'default')
+      logger.info('✅ Fouwser config fetched', {
+        providerCount: config.providers.length,
+        dailyRateLimit: defaultProvider?.dailyRateLimit,
+      })
+
+      return config
+    } catch (error) {
+      logger.error('❌ Failed to fetch Fouwser config', {
+        configUrl,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      throw error
+    }
+  })()
+
+  browserosConfigInFlight.set(cacheKey, request)
 
   try {
-    const response = await fetch(configUrl, {
-      method: 'GET',
-      headers,
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(
-        `Failed to fetch config: ${response.status} ${response.statusText} - ${errorText}`,
-      )
+    return await request
+  } finally {
+    if (browserosConfigInFlight.get(cacheKey) === request) {
+      browserosConfigInFlight.delete(cacheKey)
     }
-
-    const config = (await response.json()) as BrowserOSConfig
-
-    if (!Array.isArray(config.providers) || config.providers.length === 0) {
-      throw new Error(
-        'Invalid config response: providers array is empty or missing',
-      )
-    }
-
-    for (const provider of config.providers) {
-      if (!provider.name || !provider.model || !provider.apiKey) {
-        throw new Error('Invalid provider: missing name, model, or apiKey')
-      }
-    }
-
-    const defaultProvider = config.providers.find((p) => p.name === 'default')
-    logger.info('✅ BrowserOS config fetched', {
-      providerCount: config.providers.length,
-      dailyRateLimit: defaultProvider?.dailyRateLimit,
-    })
-
-    return config
-  } catch (error) {
-    logger.error('❌ Failed to fetch BrowserOS config', {
-      configUrl,
-      error: error instanceof Error ? error.message : String(error),
-    })
-    throw error
   }
+}
+
+export function clearBrowserOSConfigCache(): void {
+  browserosConfigCache.clear()
+  browserosConfigInFlight.clear()
 }
 
 /**

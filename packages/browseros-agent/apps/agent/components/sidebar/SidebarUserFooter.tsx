@@ -1,4 +1,4 @@
-import { ChevronsLeft, ChevronsRight, Info, Keyboard } from 'lucide-react'
+import { ChevronsLeft, ChevronsRight, Info, Keyboard, LogIn } from 'lucide-react'
 import type { FC } from 'react'
 import { Button } from '@/components/ui/button'
 import {

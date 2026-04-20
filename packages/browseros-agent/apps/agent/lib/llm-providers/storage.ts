@@ -2,6 +2,7 @@ import { storage } from '@wxt-dev/storage'
 import { sessionStorage } from '@/lib/auth/sessionStorage'
 import { getBrowserOSAdapter } from '@/lib/browseros/adapter'
 import { BROWSEROS_PREFS } from '@/lib/browseros/prefs'
+import { env } from '@/lib/env'
 import { isKimiLaunchEnabled } from '@/lib/feature-flags/kimi-launch'
 import type { LlmProviderConfig, LlmProvidersBackup } from './types'
 import { uploadLlmProvidersToGraphql } from './uploadLlmProvidersToGraphql'
@@ -9,7 +10,7 @@ import { uploadLlmProvidersToGraphql } from './uploadLlmProvidersToGraphql'
 /** Default provider ID constant */
 export const DEFAULT_PROVIDER_ID = 'fouwser'
 /** Toggle seeding of built-in hosted provider in empty storage. */
-export const ENABLE_DEFAULT_FREE_PROVIDER = false
+export const ENABLE_DEFAULT_FREE_PROVIDER = true
 /** Fallback default provider ID for storage. */
 export const DEFAULT_PROVIDER_FALLBACK_ID = ENABLE_DEFAULT_FREE_PROVIDER
   ? DEFAULT_PROVIDER_ID
@@ -21,7 +22,7 @@ const KIMI_LAUNCH_PROVIDER_NAME = '' // Kimi K2.5
 export const providersStorage = storage.defineItem<LlmProviderConfig[]>(
   'local:llm-providers',
   {
-    version: 2,
+    version: 3,
     migrations: {
       2: (
         providers: LlmProviderConfig[] | null,
@@ -34,6 +35,34 @@ export const providersStorage = storage.defineItem<LlmProviderConfig[]>(
           ) {
             return { ...provider, contextWindow: 200000 }
           }
+          return provider
+        })
+      },
+      3: (
+        providers: LlmProviderConfig[] | null,
+      ): LlmProviderConfig[] | null => {
+        if (!providers) return providers
+
+        return providers.map((provider) => {
+          const providerType = String(provider.type)
+          if (
+            provider.id === 'browseros' ||
+            providerType === 'browseros' ||
+            provider.id === DEFAULT_PROVIDER_ID
+          ) {
+            return {
+              ...provider,
+              id: DEFAULT_PROVIDER_ID,
+              type: 'fouwser',
+              modelId:
+                provider.modelId === 'fouwser-auto'
+                  ? 'default'
+                  : provider.modelId,
+              baseUrl: env.VITE_PUBLIC_BROWSEROS_API || provider.baseUrl,
+              name: getBuiltInProviderName(),
+            }
+          }
+
           return provider
         })
       },
@@ -116,8 +145,8 @@ export function createDefaultBrowserOSProvider(): LlmProviderConfig {
     id: DEFAULT_PROVIDER_ID,
     type: 'fouwser',
     name: getBuiltInProviderName(),
-    baseUrl: 'https://api.browseros.com/v1',
-    modelId: 'fouwser-auto',
+    baseUrl: env.VITE_PUBLIC_BROWSEROS_API || '',
+    modelId: 'default',
     supportsImages: true,
     contextWindow: 200000,
     temperature: 0.2,
@@ -128,9 +157,7 @@ export function createDefaultBrowserOSProvider(): LlmProviderConfig {
 
 /** Creates the default providers configuration. Only call when storage is empty. */
 export function createDefaultProvidersConfig(): LlmProviderConfig[] {
-  // Disabled for now: do not auto-seed the hosted free provider.
-  // return [createDefaultBrowserOSProvider()]
-  return []
+  return [createDefaultBrowserOSProvider()]
 }
 
 function getBuiltInProviderName(): string {

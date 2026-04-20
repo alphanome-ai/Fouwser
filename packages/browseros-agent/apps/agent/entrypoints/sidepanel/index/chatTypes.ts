@@ -1,4 +1,5 @@
-export type ChatMode = 'chat' | 'agent' | 'coding'
+// export type ChatMode = 'chat' | 'agent' | 'coding'
+export type ChatMode = 'agent' | 'coding'
 
 interface BaseSuggestion {
   display: string

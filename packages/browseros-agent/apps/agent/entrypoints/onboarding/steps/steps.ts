@@ -1,7 +1,7 @@
 import { StepConnectApps } from './StepConnectApps'
 import { StepOne } from './StepOne'
 import { StepSoul } from './StepSoul'
-// import { StepTwo } from './StepTwo'
+import { StepTwo } from './StepTwo'
 
 export const steps = [
   {
@@ -19,9 +19,9 @@ export const steps = [
     name: 'Connect Apps',
     component: StepConnectApps,
   },
-  // {
-  //   id: 4,
-  //   name: 'Sign In',
-  //   component: StepTwo,
-  // },
+  {
+    id: 4,
+    name: 'Sign In',
+    component: StepTwo,
+  },
 ]

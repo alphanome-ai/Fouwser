@@ -32,6 +32,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { getAccessToken } from '@/lib/auth/auth-client'
 import { useSessionInfo } from '@/lib/auth/sessionStorage'
 import { env } from '@/lib/env'
 import { getQueryKeyFromDocument } from '@/lib/graphql/getQueryKeyFromDocument'
@@ -54,7 +55,7 @@ type ProfileState = 'idle' | 'loading' | 'success' | 'error'
 export const ProfilePage: FC = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { sessionInfo } = useSessionInfo()
+  const { sessionInfo, isLoading: isSessionLoading } = useSessionInfo()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const userId = sessionInfo?.user?.id
@@ -112,10 +113,10 @@ export const ProfilePage: FC = () => {
   }, [profileData, form])
 
   useEffect(() => {
-    if (!isLoggedIn && !sessionInfo) {
+    if (!isSessionLoading && !isLoggedIn) {
       navigate('/login', { replace: true })
     }
-  }, [isLoggedIn, sessionInfo, navigate])
+  }, [isLoggedIn, isSessionLoading, navigate])
 
   useEffect(() => {
     return () => {
@@ -144,12 +145,17 @@ export const ProfilePage: FC = () => {
     setAvatarPreview(previewUrl)
 
     try {
+      const accessToken = await getAccessToken()
       const res = await fetch(
         `${env.VITE_PUBLIC_BROWSEROS_API}/upload/presigned-url`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken
+              ? { Authorization: `Bearer ${accessToken}` }
+              : {}),
+          },
           body: JSON.stringify({ contentType: file.type }),
         },
       )
@@ -201,7 +207,7 @@ export const ProfilePage: FC = () => {
     return (first + last).toUpperCase()
   }
 
-  if (!isLoggedIn) {
+  if (isSessionLoading || !isLoggedIn) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />

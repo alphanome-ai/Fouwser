@@ -1,10 +1,4 @@
-import {
-  AlertCircle,
-  ArrowLeft,
-  CheckCircle2,
-  Loader2,
-  Mail,
-} from 'lucide-react'
+import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
 import type { FC } from 'react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
@@ -20,16 +14,37 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { signIn, useSession } from '@/lib/auth/auth-client'
+import {
+  login,
+  loginWithGoogle,
+  register,
+  useSession,
+} from '@/lib/auth/auth-client'
 
-type LoginState = 'idle' | 'loading' | 'magic-link-sent' | 'error'
+type AuthMode = 'signin' | 'signup'
+type AuthState = 'idle' | 'credentials-loading' | 'google-loading' | 'error'
 
-export const LoginPage: FC = () => {
+interface LoginPageProps {
+  initialMode?: AuthMode
+}
+
+export const LoginPage: FC<LoginPageProps> = ({
+  initialMode = 'signin',
+}) => {
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
-  const [email, setEmail] = useState('')
-  const [state, setState] = useState<LoginState>('idle')
+
+  const [mode, setMode] = useState<AuthMode>(initialMode)
+  const [state, setState] = useState<AuthState>('idle')
   const [error, setError] = useState<string | null>(null)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
+  useEffect(() => {
+    setMode(initialMode)
+  }, [initialMode])
 
   useEffect(() => {
     if (session && !isPending) {
@@ -37,46 +52,44 @@ export const LoginPage: FC = () => {
     }
   }, [session, isPending, navigate])
 
-  const handleMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email.trim()) return
+  const isCredentialsLoading = state === 'credentials-loading'
+  const isGoogleLoading = state === 'google-loading'
+  const isLoading = isCredentialsLoading || isGoogleLoading
 
-    setState('loading')
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setState('credentials-loading')
     setError(null)
 
     try {
-      const result = await signIn.magicLink({
-        email: email.trim(),
-        callbackURL: '/home',
-      })
-
-      if (result.error) {
-        setState('error')
-        setError(result.error.message || 'Failed to send magic link')
-        return
+      if (mode === 'signup') {
+        await register({
+          firstName,
+          lastName,
+          email,
+          password,
+        })
+      } else {
+        await login({ email, password })
       }
 
-      setState('magic-link-sent')
+      navigate('/home', { replace: true })
     } catch (err) {
       setState('error')
-      setError(err instanceof Error ? err.message : 'Failed to send magic link')
+      setError(err instanceof Error ? err.message : 'Authentication failed')
     }
   }
 
-  const handleGoogleSignIn = async () => {
-    setState('loading')
+  const handleGoogleAuth = async () => {
+    setState('google-loading')
     setError(null)
 
     try {
-      await signIn.social({
-        provider: 'google',
-        callbackURL: '/home',
-      })
+      await loginWithGoogle()
+      navigate('/home', { replace: true })
     } catch (err) {
       setState('error')
-      setError(
-        err instanceof Error ? err.message : 'Failed to sign in with Google',
-      )
+      setError(err instanceof Error ? err.message : 'Google sign-in failed')
     }
   }
 
@@ -85,38 +98,6 @@ export const LoginPage: FC = () => {
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
-    )
-  }
-
-  if (state === 'magic-link-sent') {
-    return (
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-            <CheckCircle2 className="size-6 text-green-600 dark:text-green-400" />
-          </div>
-          <CardTitle>Check your email</CardTitle>
-          <CardDescription>
-            We sent a magic link to <strong>{email}</strong>
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-center text-muted-foreground text-sm">
-            Click the link in the email to sign in. If you don't see it, check
-            your spam folder.
-          </p>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => {
-              setState('idle')
-              setEmail('')
-            }}
-          >
-            Use a different email
-          </Button>
-        </CardContent>
-      </Card>
     )
   }
 
@@ -133,9 +114,13 @@ export const LoginPage: FC = () => {
             <ArrowLeft className="size-4" />
           </Button>
           <div className="flex-1 pr-9 text-center">
-            <CardTitle className="text-2xl">Welcome to Fouwser</CardTitle>
+            <CardTitle className="text-2xl">
+              {mode === 'signup' ? 'Create your Fouwser account' : 'Welcome to Fouwser'}
+            </CardTitle>
             <CardDescription>
-              Sign in to your account to continue
+              {mode === 'signup'
+                ? 'Create an account to sync your settings and history'
+                : 'Sign in to continue'}
             </CardDescription>
           </div>
         </div>
@@ -148,7 +133,57 @@ export const LoginPage: FC = () => {
           </Alert>
         )}
 
-        <form onSubmit={handleMagicLink} className="space-y-4">
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={handleGoogleAuth}
+          disabled={isLoading}
+        >
+          {isGoogleLoading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <GoogleIcon />
+          )}
+          {mode === 'signup' ? 'Sign up with Google' : 'Continue with Google'}
+        </Button>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <Separator className="w-full" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">
+              Or continue with email
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={handleAuthSubmit} className="space-y-4">
+          {mode === 'signup' && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="first-name">First name</Label>
+                <Input
+                  id="first-name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last-name">Last name</Label>
+                <Input
+                  id="last-name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -157,48 +192,49 @@ export const LoginPage: FC = () => {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={state === 'loading'}
+              disabled={isLoading}
               required
             />
           </div>
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={state === 'loading' || !email.trim()}
-          >
-            {state === 'loading' ? (
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder={mode === 'signup' ? 'At least 8 characters' : 'Enter your password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+              minLength={mode === 'signup' ? 8 : undefined}
+              required
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isCredentialsLoading ? (
               <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Mail className="size-4" />
-            )}
-            Send Magic Link
+            ) : null}
+            {mode === 'signup' ? 'Create account' : 'Sign in'}
           </Button>
         </form>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <Separator className="w-full" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">
-              Or continue with
-            </span>
-          </div>
+        <div className="text-center text-muted-foreground text-sm">
+          {mode === 'signup'
+            ? 'Already have an account? '
+            : "Don't have an account? "}
+          <button
+            type="button"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+            onClick={() =>
+              navigate(mode === 'signup' ? '/login' : '/signup', {
+                replace: true,
+              })
+            }
+          >
+            {mode === 'signup' ? 'Sign in' : 'Sign up'}
+          </button>
         </div>
-
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={handleGoogleSignIn}
-          disabled={state === 'loading'}
-        >
-          {state === 'loading' ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <GoogleIcon />
-          )}
-          Continue with Google
-        </Button>
       </CardContent>
     </Card>
   )
