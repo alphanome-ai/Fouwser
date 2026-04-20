@@ -24,10 +24,7 @@ function parseEmbeddedErrorPayload(message: string): ParsedErrorPayload | null {
   }
 
   const genericJsonIndex = message.indexOf('{')
-  if (
-    genericJsonIndex >= 0 &&
-    genericJsonIndex !== embeddedErrorIndex
-  ) {
+  if (genericJsonIndex >= 0 && genericJsonIndex !== embeddedErrorIndex) {
     candidateMessages.push(message.slice(genericJsonIndex))
   }
 

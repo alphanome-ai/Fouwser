@@ -10,9 +10,7 @@ import { LLM_PROVIDERS, type LLMConfig } from '@browseros/shared/schemas/llm'
 import type { ResolvedLLMConfig } from './types'
 
 function isBuiltInProvider(provider: string): boolean {
-  return (
-    provider === LLM_PROVIDERS.FOUWSER
-  )
+  return provider === LLM_PROVIDERS.FOUWSER
 }
 
 export async function resolveLLMConfig(

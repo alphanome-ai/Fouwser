@@ -5,11 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import {
-  login,
-  loginWithGoogle,
-  register,
-} from '@/lib/auth/auth-client'
+import { login, loginWithGoogle, register } from '@/lib/auth/auth-client'
 import {
   ONBOARDING_SIGNIN_COMPLETED_EVENT,
   ONBOARDING_SIGNIN_SKIPPED_EVENT,
@@ -97,7 +93,9 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
         <div className="w-full max-w-md space-y-6">
           <div className="space-y-2 text-center">
             <h2 className="font-bold text-3xl tracking-tight">
-              {mode === 'signup' ? 'Create your Fouwser account' : 'Sign in to Fouwser'}
+              {mode === 'signup'
+                ? 'Create your Fouwser account'
+                : 'Sign in to Fouwser'}
             </h2>
             {/* <p className="text-base text-muted-foreground">
               Sync your settings and unlock cloud features
@@ -181,7 +179,9 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
                 id="signin-password"
                 type="password"
                 placeholder={
-                  mode === 'signup' ? 'At least 8 characters' : 'Enter your password'
+                  mode === 'signup'
+                    ? 'At least 8 characters'
+                    : 'Enter your password'
                 }
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -207,7 +207,11 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
             <Button
               variant="ghost"
               className="text-muted-foreground"
-              onClick={() => setMode((current) => (current === 'signup' ? 'signin' : 'signup'))}
+              onClick={() =>
+                setMode((current) =>
+                  current === 'signup' ? 'signin' : 'signup',
+                )
+              }
             >
               {mode === 'signup'
                 ? 'Already have an account? Sign in'

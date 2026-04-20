@@ -28,9 +28,7 @@ interface LoginPageProps {
   initialMode?: AuthMode
 }
 
-export const LoginPage: FC<LoginPageProps> = ({
-  initialMode = 'signin',
-}) => {
+export const LoginPage: FC<LoginPageProps> = ({ initialMode = 'signin' }) => {
   const navigate = useNavigate()
   const { data: session, isPending } = useSession()
 
@@ -115,7 +113,9 @@ export const LoginPage: FC<LoginPageProps> = ({
           </Button>
           <div className="flex-1 pr-9 text-center">
             <CardTitle className="text-2xl">
-              {mode === 'signup' ? 'Create your Fouwser account' : 'Welcome to Fouwser'}
+              {mode === 'signup'
+                ? 'Create your Fouwser account'
+                : 'Welcome to Fouwser'}
             </CardTitle>
             <CardDescription>
               {mode === 'signup'
@@ -202,7 +202,11 @@ export const LoginPage: FC<LoginPageProps> = ({
             <Input
               id="password"
               type="password"
-              placeholder={mode === 'signup' ? 'At least 8 characters' : 'Enter your password'}
+              placeholder={
+                mode === 'signup'
+                  ? 'At least 8 characters'
+                  : 'Enter your password'
+              }
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}

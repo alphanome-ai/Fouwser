@@ -15,18 +15,18 @@ import type {
   LanguageModelV3StreamResult,
 } from '@ai-sdk/provider'
 import { INLINED_ENV } from '../../../env'
-import { fetchBrowserOSConfig, getLLMConfigFromProvider } from '../gateway'
 import { logger } from '../../logger'
+import { fetchBrowserOSConfig, getLLMConfigFromProvider } from '../gateway'
 import type { ResolvedLLMConfig } from './types'
 
 type RequestMessage = {
   role: 'system' | 'user' | 'assistant' | 'tool'
   content?:
-  | string
-  | Array<
-    | { type: 'text'; text: string }
-    | { type: 'image_url'; image_url: { url: string } }
-  >
+    | string
+    | Array<
+        | { type: 'text'; text: string }
+        | { type: 'image_url'; image_url: { url: string } }
+      >
   tool_calls?: Array<{
     id: string
     type: 'function'
@@ -116,7 +116,8 @@ function toTextContent(
 }
 
 function encodeBinary(value: Uint8Array | ArrayBuffer): string {
-  const buffer = value instanceof Uint8Array ? Buffer.from(value) : Buffer.from(value)
+  const buffer =
+    value instanceof Uint8Array ? Buffer.from(value) : Buffer.from(value)
   return buffer.toString('base64')
 }
 
@@ -140,7 +141,9 @@ function toImageUrl(
   }
 }
 
-function toUserContentPart(part: unknown):
+function toUserContentPart(
+  part: unknown,
+):
   | { type: 'text'; text: string }
   | { type: 'image_url'; image_url: { url: string } }
   | null {
@@ -193,9 +196,7 @@ function toUserContentPart(part: unknown):
   return null
 }
 
-function isToolCallPart(
-  part: unknown,
-): part is {
+function isToolCallPart(part: unknown): part is {
   type: 'tool-call'
   toolCallId: string
   toolName: string
@@ -223,7 +224,10 @@ function promptToMessages(prompt: LanguageModelV3Prompt): RequestMessage[] {
         if (part.type !== 'tool-result') continue
 
         let outputText = ''
-        if (part.output?.type === 'text' && typeof part.output.value === 'string') {
+        if (
+          part.output?.type === 'text' &&
+          typeof part.output.value === 'string'
+        ) {
           outputText = part.output.value
         } else if (part.output?.type === 'json') {
           outputText = JSON.stringify(part.output.value)
@@ -292,7 +296,9 @@ function promptToMessages(prompt: LanguageModelV3Prompt): RequestMessage[] {
   return messages
 }
 
-function extractTools(params: LanguageModelV3CallOptions): RequestTool[] | undefined {
+function extractTools(
+  params: LanguageModelV3CallOptions,
+): RequestTool[] | undefined {
   if (!params.tools || params.tools.length === 0) {
     return undefined
   }
@@ -346,7 +352,6 @@ function buildRequestBody(
   params: LanguageModelV3CallOptions,
   stream: boolean,
 ): RequestBody {
-
   const r: RequestBody = {
     model,
     messages: promptToMessages(params.prompt),
@@ -437,7 +442,9 @@ function responseToGenerateResult(
   const message = choice?.message
   const content: LanguageModelV3GenerateResult['content'] = []
 
-  const textContent = message?.content ? toTextContent(message.content) : undefined
+  const textContent = message?.content
+    ? toTextContent(message.content)
+    : undefined
   if (typeof textContent === 'string') {
     content.push({ type: 'text', text: textContent })
   } else if (Array.isArray(textContent)) {
@@ -548,8 +555,8 @@ async function postChatCompletion(
     const errorText = await response.text()
     throw new Error(
       `Fouwser chat request failed: ${response.status} ${response.statusText} ` +
-      `at ${hostedTarget.baseUrl.replace(/\/$/, '')}/chat/completion ` +
-      `with model=${hostedTarget.model} - ${errorText}`,
+        `at ${hostedTarget.baseUrl.replace(/\/$/, '')}/chat/completion ` +
+        `with model=${hostedTarget.model} - ${errorText}`,
     )
   }
 

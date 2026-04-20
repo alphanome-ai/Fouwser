@@ -152,9 +152,7 @@ export const ProfilePage: FC = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(accessToken
-              ? { Authorization: `Bearer ${accessToken}` }
-              : {}),
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           },
           body: JSON.stringify({ contentType: file.type }),
         },

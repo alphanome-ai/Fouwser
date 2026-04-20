@@ -85,7 +85,9 @@ function toSessionData(payload: AuthTokenResponse): SessionData {
   }
 }
 
-function readSessionData(sessionInfo: SessionInfo | null | undefined): SessionData | null {
+function readSessionData(
+  sessionInfo: SessionInfo | null | undefined,
+): SessionData | null {
   if (!sessionInfo?.session || !sessionInfo.user) {
     return null
   }
@@ -96,7 +98,9 @@ function readSessionData(sessionInfo: SessionInfo | null | undefined): SessionDa
   }
 }
 
-async function persistSession(payload: AuthTokenResponse): Promise<SessionData> {
+async function persistSession(
+  payload: AuthTokenResponse,
+): Promise<SessionData> {
   const data = toSessionData(payload)
   await sessionStorage.setValue(data)
   return data
@@ -106,10 +110,7 @@ async function clearSession(): Promise<void> {
   await sessionStorage.setValue({})
 }
 
-async function apiFetch(
-  path: string,
-  init?: RequestInit,
-): Promise<Response> {
+async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const headers = new Headers(init?.headers)
   if (!headers.has('Content-Type') && init?.body) {
     headers.set('Content-Type', 'application/json')
@@ -227,9 +228,9 @@ export async function authorizedFetch(
 
 let restorePromise: Promise<SessionData | null> | null = null
 
-export async function getSession(
-  options?: { forceRefresh?: boolean },
-): Promise<SessionData | null> {
+export async function getSession(options?: {
+  forceRefresh?: boolean
+}): Promise<SessionData | null> {
   if (!options?.forceRefresh && restorePromise) {
     return restorePromise
   }
@@ -349,7 +350,9 @@ export async function register(input: RegisterInput): Promise<SessionData> {
 function requireGoogleClientId(): string {
   const clientId = env.VITE_PUBLIC_GOOGLE_CLIENT_ID?.trim()
   if (!clientId) {
-    throw new Error('VITE_PUBLIC_GOOGLE_CLIENT_ID is required for Google sign-in')
+    throw new Error(
+      'VITE_PUBLIC_GOOGLE_CLIENT_ID is required for Google sign-in',
+    )
   }
   return clientId
 }
@@ -391,7 +394,9 @@ async function getGoogleIdToken(): Promise<string> {
 
   const idToken = hashParams.get('id_token')
   if (!idToken) {
-    throw new Error(hashParams.get('error_description') || 'Google sign-in failed')
+    throw new Error(
+      hashParams.get('error_description') || 'Google sign-in failed',
+    )
   }
 
   return idToken

@@ -1,8 +1,8 @@
 import { createParser, type EventSourceMessage } from 'eventsource-parser'
 import type { ChatMode } from '@/entrypoints/sidepanel/index/chatTypes'
 import { getSession } from '@/lib/auth/auth-client'
-import { env } from '@/lib/env'
 import { getAgentServerUrl } from '@/lib/browseros/helpers'
+import { env } from '@/lib/env'
 import {
   defaultProviderIdStorage,
   providersStorage,

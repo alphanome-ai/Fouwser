@@ -3,13 +3,13 @@ import { DefaultChatTransport } from 'ai'
 import { compact } from 'es-toolkit/array'
 import { useEffect, useRef, useState } from 'react'
 import { useChatRefs } from '@/entrypoints/sidepanel/index/useChatRefs'
+import { getSession } from '@/lib/auth/auth-client'
 import { useAgentServerUrl } from '@/lib/browseros/useBrowserOSProviders'
 import {
   WORKFLOW_RUN_COMPLETED_EVENT,
   WORKFLOW_RUN_RETRIED_EVENT,
   WORKFLOW_RUN_STOPPED_EVENT,
 } from '@/lib/constants/analyticsEvents'
-import { getSession } from '@/lib/auth/auth-client'
 import { env } from '@/lib/env'
 import { track } from '@/lib/metrics/track'
 

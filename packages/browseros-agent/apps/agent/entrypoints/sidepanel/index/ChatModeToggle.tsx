@@ -1,4 +1,4 @@
-import { Braces, MessageSquare, MousePointer2 } from 'lucide-react'
+import { Braces, type MessageSquare, MousePointer2 } from 'lucide-react'
 import type { FC } from 'react'
 import {
   Tooltip,

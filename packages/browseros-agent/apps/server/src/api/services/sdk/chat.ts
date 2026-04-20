@@ -64,8 +64,7 @@ export class ChatService {
         model: llmConfig.model ?? 'default',
         apiKey: llmConfig.apiKey,
         baseUrl: llmConfig.baseUrl,
-        authToken:
-          'authToken' in llmConfig ? llmConfig.authToken : undefined,
+        authToken: 'authToken' in llmConfig ? llmConfig.authToken : undefined,
         publicApiBaseUrl:
           'publicApiBaseUrl' in llmConfig
             ? llmConfig.publicApiBaseUrl

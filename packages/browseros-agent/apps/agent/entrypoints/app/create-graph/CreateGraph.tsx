@@ -22,13 +22,13 @@ import {
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
 import { useChatRefs } from '@/entrypoints/sidepanel/index/useChatRefs'
+import { getSession } from '@/lib/auth/auth-client'
 import { useAgentServerUrl } from '@/lib/browseros/useBrowserOSProviders'
 import {
   GRAPH_SAVED_EVENT,
   GRAPH_UPDATED_EVENT,
   NEW_GRAPH_CREATED_EVENT,
 } from '@/lib/constants/analyticsEvents'
-import { getSession } from '@/lib/auth/auth-client'
 import { env } from '@/lib/env'
 import { useLlmProviders } from '@/lib/llm-providers/useLlmProviders'
 import { track } from '@/lib/metrics/track'
@@ -213,10 +213,10 @@ export const CreateGraph: FC = () => {
 
         if (metadata?.messageType === 'run-graph' && codeIdRef.current) {
           const provider = selectedLlmProviderRef.current
-            const sessionInfo =
-              provider?.type === 'fouwser'
-                ? await getSession({ forceRefresh: true })
-                : null
+          const sessionInfo =
+            provider?.type === 'fouwser'
+              ? await getSession({ forceRefresh: true })
+              : null
           const enabledMcpServers = enabledMcpServersRef.current
           const customMcpServers = enabledCustomServersRef.current
 
