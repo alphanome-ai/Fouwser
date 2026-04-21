@@ -5,7 +5,7 @@
 
 import { logger } from '../logger'
 
-const CONFIG_CACHE_TTL_MINUTES = 60 * 5
+const CONFIG_CACHE_TTL_MINUTES = 1000 * 60 * 5
 
 export interface Provider {
   name: string
@@ -52,13 +52,13 @@ export async function fetchBrowserOSConfig(
   const cacheKey = getBrowserOSConfigCacheKey(configUrl, browserosId, authToken)
   const cachedConfig = browserosConfigCache.get(cacheKey)
   if (cachedConfig && Date.now() < cachedConfig.expiresAt) {
-    logger.debug('Using cached BrowserOS config', { configUrl, browserosId })
+    logger.debug('Using cached Fouwser config', { configUrl, browserosId })
     return cachedConfig.config
   }
 
   const inFlightRequest = browserosConfigInFlight.get(cacheKey)
   if (inFlightRequest) {
-    logger.debug('Awaiting in-flight BrowserOS config request', {
+    logger.debug('Awaiting in-flight Fouwser config request', {
       configUrl,
       browserosId,
     })
