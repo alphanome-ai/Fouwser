@@ -1,18 +1,18 @@
-import { ArrowLeft, Plus } from "lucide-react";
-import type { FC } from "react";
-import { ChatProviderSelector } from "@/components/chat/ChatProviderSelector";
-import type { Provider } from "@/components/chat/chatComponentTypes";
-import { Badge } from "@/components/ui/badge";
-import { BrowserOSIcon, ProviderIcon } from "@/lib/llm-providers/providerIcons";
-import type { ProviderType } from "@/lib/llm-providers/types";
+import { ArrowLeft, Plus } from 'lucide-react'
+import type { FC } from 'react'
+import { ChatProviderSelector } from '@/components/chat/ChatProviderSelector'
+import type { Provider } from '@/components/chat/chatComponentTypes'
+import { Badge } from '@/components/ui/badge'
+import { BrowserOSIcon, ProviderIcon } from '@/lib/llm-providers/providerIcons'
+import type { ProviderType } from '@/lib/llm-providers/types'
 
 interface NewTabChatHeaderProps {
-  selectedProvider: Provider;
-  providers: Provider[];
-  onSelectProvider: (provider: Provider) => void;
-  onNewConversation: () => void;
-  onBackToSearch: () => void;
-  hasMessages: boolean;
+  selectedProvider: Provider
+  providers: Provider[]
+  onSelectProvider: (provider: Provider) => void
+  onNewConversation: () => void
+  onBackToSearch: () => void
+  hasMessages: boolean
 }
 
 export const NewTabChatHeader: FC<NewTabChatHeaderProps> = ({
@@ -47,7 +47,7 @@ export const NewTabChatHeader: FC<NewTabChatHeaderProps> = ({
             className="group relative inline-flex cursor-pointer items-center gap-2 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground data-[state=open]:bg-accent"
             title="Change AI Provider"
           >
-            {selectedProvider.type === "fouwser" ? (
+            {selectedProvider.type === 'fouwser' ? (
               <BrowserOSIcon size={18} />
             ) : (
               <ProviderIcon
@@ -83,5 +83,5 @@ export const NewTabChatHeader: FC<NewTabChatHeaderProps> = ({
         )}
       </div>
     </header>
-  );
-};
+  )
+}

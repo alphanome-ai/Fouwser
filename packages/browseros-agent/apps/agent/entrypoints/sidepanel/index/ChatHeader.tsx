@@ -1,21 +1,21 @@
-import { History, Plus, SettingsIcon } from "lucide-react";
+import { History, Plus, SettingsIcon } from 'lucide-react'
 // import { Github } from 'lucide-react'
-import type { FC } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
-import { ChatProviderSelector } from "@/components/chat/ChatProviderSelector";
-import type { Provider } from "@/components/chat/chatComponentTypes";
-import { Badge } from "@/components/ui/badge";
-import { ThemeToggle } from "@/components/elements/theme-toggle";
+import type { FC } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router'
+import { ChatProviderSelector } from '@/components/chat/ChatProviderSelector'
+import type { Provider } from '@/components/chat/chatComponentTypes'
+import { ThemeToggle } from '@/components/elements/theme-toggle'
+import { Badge } from '@/components/ui/badge'
 // import { productRepositoryUrl } from '@/lib/constants/productUrls'
-import { BrowserOSIcon, ProviderIcon } from "@/lib/llm-providers/providerIcons";
-import type { ProviderType } from "@/lib/llm-providers/types";
+import { BrowserOSIcon, ProviderIcon } from '@/lib/llm-providers/providerIcons'
+import type { ProviderType } from '@/lib/llm-providers/types'
 
 interface ChatHeaderProps {
-  selectedProvider: Provider;
-  providers: Provider[];
-  onSelectProvider: (provider: Provider) => void;
-  onNewConversation: () => void;
-  hasMessages: boolean;
+  selectedProvider: Provider
+  providers: Provider[]
+  onSelectProvider: (provider: Provider) => void
+  onNewConversation: () => void
+  hasMessages: boolean
 }
 
 export const ChatHeader: FC<ChatHeaderProps> = ({
@@ -25,14 +25,14 @@ export const ChatHeader: FC<ChatHeaderProps> = ({
   onNewConversation,
   hasMessages,
 }) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const isHistoryPage = location.pathname === "/history";
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isHistoryPage = location.pathname === '/history'
 
   const handleNewConversationFromHistory = () => {
-    onNewConversation();
-    navigate("/");
-  };
+    onNewConversation()
+    navigate('/')
+  }
 
   return (
     <header className="flex items-center justify-between border-border/40 border-b bg-background/80 px-3 py-2.5 backdrop-blur-md">
@@ -48,7 +48,7 @@ export const ChatHeader: FC<ChatHeaderProps> = ({
             className="group relative inline-flex cursor-pointer items-center gap-2 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground data-[state=open]:bg-accent"
             title="Change AI Provider"
           >
-            {selectedProvider.type === "fouwser" ? (
+            {selectedProvider.type === 'fouwser' ? (
               <BrowserOSIcon size={18} />
             ) : (
               <ProviderIcon
@@ -128,5 +128,5 @@ export const ChatHeader: FC<ChatHeaderProps> = ({
         />
       </div>
     </header>
-  );
-};
+  )
+}
