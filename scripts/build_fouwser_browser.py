@@ -303,6 +303,42 @@ def json_get(json_file: Path, key: str) -> str:
     return str(obj[key])
 
 
+def next_extension_build_number(counter_path: Path) -> int:
+    current = 0
+    if counter_path.exists():
+        try:
+            current = int(counter_path.read_text(encoding="utf-8").strip() or "0")
+        except ValueError:
+            current = 0
+
+    next_value = current + 1
+    if next_value > 65535:
+        next_value = 1
+
+    counter_path.write_text(f"{next_value}\n", encoding="utf-8")
+    return next_value
+
+
+def stamp_extension_manifest_version(manifest_path: Path, build_number: int) -> str:
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    raw_version = str(manifest.get("version", "0.0.0"))
+    parts = raw_version.split(".")
+
+    try:
+        ints = [int(part) for part in parts]
+    except ValueError:
+        die(f"Invalid extension version in {manifest_path}: {raw_version}")
+
+    while len(ints) < 3:
+        ints.append(0)
+    ints = ints[:3] + [build_number]
+
+    stamped_version = ".".join(str(part) for part in ints)
+    manifest["version"] = stamped_version
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return stamped_version
+
+
 def ensure_pkcs8_key(key_path: Path) -> None:
     tmp_pkcs8 = key_path.with_suffix(key_path.suffix + ".pk8.tmp")
     result = run(
@@ -320,6 +356,12 @@ def ensure_pkcs8_key(key_path: Path) -> None:
         capture_output=True,
     )
     if result.returncode != 0:
+        if os.environ.get("ALLOW_EXTENSION_KEYGEN") != "1":
+            die(
+                f"Extension key is invalid or unreadable: {key_path}. "
+                "Refusing to generate a replacement because that changes the extension ID. "
+                "Restore the original key or set ALLOW_EXTENSION_KEYGEN=1 to rotate intentionally."
+            )
         log(f"Extension key at {key_path} is invalid; regenerating")
         run(
             [
@@ -352,6 +394,13 @@ def pack_extension(
     src_dir: Path, key_path: Path, out_crx: Path, log_file: Path, chrome_packer: Path
 ) -> None:
     if not key_path.is_file():
+        if os.environ.get("ALLOW_EXTENSION_KEYGEN") != "1":
+            die(
+                f"Missing extension key: {key_path}. "
+                "Refusing to generate a new one because that changes the extension ID "
+                "and breaks OAuth redirect URIs. Restore the key or set "
+                "ALLOW_EXTENSION_KEYGEN=1 to rotate intentionally."
+            )
         log(f"Generating extension key: {key_path}")
         key_path.parent.mkdir(parents=True, exist_ok=True)
         run(
@@ -409,10 +458,28 @@ def build_local_agent_artifacts(
     work_dir.mkdir(parents=True, exist_ok=True)
     shim_bin_dir.mkdir(parents=True, exist_ok=True)
 
+    if server_mode == "prod":
+        server_env_path = agent_monorepo / "apps/server/.env.production"
+        agent_env_path = agent_monorepo / "apps/agent/.env.production"
+    else:
+        server_env_path = agent_monorepo / "apps/server/.env.development"
+        agent_env_path = agent_monorepo / "apps/agent/.env.development"
+
+    if not server_env_path.exists():
+        die(f"Missing required server env file: {server_env_path}")
+    if not agent_env_path.exists():
+        die(f"Missing required agent env file: {agent_env_path}")
+
     build_env = os.environ.copy()
-    build_env.setdefault("VITE_PUBLIC_BROWSEROS_API", "https://api.fouwser.com")
+    build_env.update(_parse_env_file(server_env_path))
+    build_env.update(_parse_env_file(agent_env_path))
+    build_env.setdefault("VITE_PUBLIC_BROWSEROS_API", "https://dapi.fouwser.com")
     build_env["GRAPHQL_SCHEMA_PATH"] = str(
         agent_monorepo / "apps/agent/schema/schema.graphql"
+    )
+    log(
+        f"Loaded build env files -> server: {server_env_path.name}, "
+        f"agent: {agent_env_path.name}"
     )
 
     if server_mode == "prod" and not shutil.which("sentry-cli"):
@@ -428,14 +495,6 @@ def build_local_agent_artifacts(
     run(["bun", "install"], cwd=agent_monorepo, env=build_env)
     run(["bun", "run", "build:agent"], cwd=agent_monorepo, env=build_env)
     run(["bun", "run", "build:ext"], cwd=agent_monorepo, env=build_env)
-
-    if server_mode == "prod":
-        server_env_path = agent_monorepo / "apps/server/.env.production"
-    else:
-        server_env_path = agent_monorepo / "apps/server/.env.development"
-    if not server_env_path.exists():
-        die(f"Missing required server env file: {server_env_path}")
-    build_env.update(_parse_env_file(server_env_path))
 
     server_target = f"darwin-{target_arch}"
     server_bin_name = f"browseros-server-{server_target}"
@@ -461,14 +520,33 @@ def build_local_agent_artifacts(
     require_file(controller_dist / "manifest.json")
     require_file(server_dist / server_bin_name)
 
+    if os.environ.get("STAMP_LOCAL_EXTENSION_VERSION", "1") == "1":
+        build_number = next_extension_build_number(
+            key_dir / ".local-extension-build-number"
+        )
+        agent_version = stamp_extension_manifest_version(
+            agent_dist / "manifest.json", build_number
+        )
+        controller_version = stamp_extension_manifest_version(
+            controller_dist / "manifest.json", build_number
+        )
+        log(
+            f"Stamped extension versions for update propagation -> "
+            f"agent: {agent_version}, controller: {controller_version}"
+        )
+    else:
+        agent_version = json_get(agent_dist / "manifest.json", "version")
+        controller_version = json_get(controller_dist / "manifest.json", "version")
+
     log("Packing custom extension CRXs...")
     agent_key, controller_key = key_dir / "agent.pem", key_dir / "controller.pem"
-    # Always rotate extension keys for local injection builds so packaged CRXs
-    # are re-signed with fresh identities every run.
-    for key_path in (agent_key, controller_key):
-        if key_path.exists():
-            key_path.unlink()
-            log(f"Deleted release key: {key_path}")
+    if os.environ.get("ROTATE_EXTENSION_KEYS") == "1":
+        for key_path in (agent_key, controller_key):
+            if key_path.exists():
+                key_path.unlink()
+                log(f"Deleted release key: {key_path}")
+    else:
+        log("Reusing existing extension release keys.")
 
     packed_agent_crx, packed_controller_crx = (
         work_dir / "agent.crx",
@@ -492,8 +570,6 @@ def build_local_agent_artifacts(
 
     agent_id = extension_id_from_pem(agent_key)
     controller_id = extension_id_from_pem(controller_key)
-    agent_version = json_get(agent_dist / "manifest.json", "version")
-    controller_version = json_get(controller_dist / "manifest.json", "version")
 
     log(
         f"Custom IDs -> agent: {agent_id} (v{agent_version}), controller: {controller_id} (v{controller_version})"
