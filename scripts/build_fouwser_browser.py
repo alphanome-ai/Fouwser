@@ -592,6 +592,16 @@ def build_local_agent_artifacts(
     shutil.copy2(Path(bun_path), resources_bun_dir / bun_target_name)
     (resources_bun_dir / bun_target_name).chmod(0o755)
 
+    # Write a build version file into the server resources directory.
+    # This ensures the Chromium `bundle_data` directory source detects a change
+    # (Ninja only tracks directory mtime, which doesn't update when files inside
+    # subdirectories are overwritten in-place).
+    build_stamp = datetime.now().isoformat()
+    (resources_server_dir / ".build_version").write_text(
+        f"{agent_version}\n{build_stamp}\n", encoding="utf-8"
+    )
+    log(f"Wrote server build stamp: {build_stamp}")
+
     return {
         "agent_id": agent_id,
         "controller_id": controller_id,
