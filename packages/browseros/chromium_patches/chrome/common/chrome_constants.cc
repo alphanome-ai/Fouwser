@@ -7,7 +7,7 @@ index 298138e77b9f6..0d30768ef87f4 100644
      FPL("sandboxed_process");
  #elif BUILDFLAG(IS_POSIX)
 -const base::FilePath::CharType kBrowserProcessExecutableName[] = FPL("chrome");
-+const base::FilePath::CharType kBrowserProcessExecutableName[] = FPL("browseros");
++const base::FilePath::CharType kBrowserProcessExecutableName[] = FPL("fouwser");
  // Helper processes end up with a name of "exe" due to execing via
  // /proc/self/exe.  See bug 22703.
  const base::FilePath::CharType kHelperProcessExecutableName[] = FPL("exe");
@@ -17,8 +17,8 @@ index 298138e77b9f6..0d30768ef87f4 100644
  #elif BUILDFLAG(IS_POSIX)
 -const base::FilePath::CharType kBrowserProcessExecutablePath[] = FPL("chrome");
 -const base::FilePath::CharType kHelperProcessExecutablePath[] = FPL("chrome");
-+const base::FilePath::CharType kBrowserProcessExecutablePath[] = FPL("browseros");
-+const base::FilePath::CharType kHelperProcessExecutablePath[] = FPL("browseros");
++const base::FilePath::CharType kBrowserProcessExecutablePath[] = FPL("fouwser");
++const base::FilePath::CharType kHelperProcessExecutablePath[] = FPL("fouwser");
  #endif  // OS_*
  
  #if BUILDFLAG(IS_MAC)
