@@ -213,6 +213,13 @@ export const Chat = () => {
           <div className="flex flex-1 items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
+        ) : status === 'submitted' && messages.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Connecting to agent...
+            </p>
+          </div>
         ) : messages.length === 0 ? (
           <ChatEmptyState
             mode={mode}

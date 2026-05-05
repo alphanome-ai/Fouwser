@@ -125,11 +125,11 @@ export const SidebarBranding: FC<SidebarBrandingProps> = ({
                   </p>
                 </div>
               </DropdownMenuLabel>
-              {/* <DropdownMenuSeparator /> */}
-              {/* <DropdownMenuItem onClick={() => navigate('/profile')}>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <User className="mr-2 size-4" />
                 Update Profile
-              </DropdownMenuItem> */}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => navigate('/logout')}

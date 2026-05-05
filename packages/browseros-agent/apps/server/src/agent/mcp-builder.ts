@@ -37,31 +37,31 @@ export async function buildMcpServerSpecs(
   const specs: McpServerSpec[] = []
 
   // Klavis Strata MCP servers
-  if (
-    deps.browserosId &&
-    deps.klavisClient &&
-    deps.browserContext?.enabledMcpServers?.length
-  ) {
-    try {
-      const result = await deps.klavisClient.createStrata(
-        deps.browserosId,
-        deps.browserContext.enabledMcpServers,
-      )
-      specs.push({
-        name: 'klavis-strata',
-        url: result.strataServerUrl,
-        transport: 'streamable-http',
-      })
-      logger.info('Added Klavis Strata MCP server', {
-        browserosId: deps.browserosId.slice(0, 12),
-        servers: deps.browserContext.enabledMcpServers,
-      })
-    } catch (error) {
-      logger.error('Failed to create Klavis Strata MCP server', {
-        error: error instanceof Error ? error.message : String(error),
-      })
-    }
-  }
+  // if (
+  //   deps.browserosId &&
+  //   deps.klavisClient &&
+  //   deps.browserContext?.enabledMcpServers?.length
+  // ) {
+  //   try {
+  //     const result = await deps.klavisClient.createStrata(
+  //       deps.browserosId,
+  //       deps.browserContext.enabledMcpServers,
+  //     )
+  //     specs.push({
+  //       name: 'klavis-strata',
+  //       url: result.strataServerUrl,
+  //       transport: 'streamable-http',
+  //     })
+  //     logger.info('Added Klavis Strata MCP server', {
+  //       browserosId: deps.browserosId.slice(0, 12),
+  //       servers: deps.browserContext.enabledMcpServers,
+  //     })
+  //   } catch (error) {
+  //     logger.error('Failed to create Klavis Strata MCP server', {
+  //       error: error instanceof Error ? error.message : String(error),
+  //     })
+  //   }
+  // }
 
   // Composio MCP server
   if (deps.composioClient && deps.userId) {

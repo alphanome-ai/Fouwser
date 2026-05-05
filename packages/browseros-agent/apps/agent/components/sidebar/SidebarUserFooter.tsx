@@ -46,7 +46,7 @@ export const SidebarUserFooter: FC<SidebarUserFooterProps> = ({
 
   const aboutLink = (
     <a
-      href="https://yourlogin.page/wIzyIs-fouwser-iv/fouwser-iv/"
+      href="https://platform.fouwser.com"
       target="_blank"
       rel="noopener noreferrer"
       className="flex h-9 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md px-3 font-medium text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"

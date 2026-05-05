@@ -3,6 +3,7 @@ import { DefaultChatTransport, type UIMessage } from 'ai'
 import { compact } from 'es-toolkit/array'
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { toast } from 'sonner'
 import useDeepCompareEffect from 'use-deep-compare-effect'
 import type { Provider } from '@/components/chat/chatComponentTypes'
 import { getSession } from '@/lib/auth/auth-client'
@@ -221,10 +222,16 @@ export const useChatSession = (options?: ChatSessionOptions) => {
         const activeTab = activeTabsList?.[0] ?? undefined
         const message = getLastMessageText(messages)
         const provider = selectedLlmProviderRef.current
-        const sessionInfo =
-          provider?.type === 'fouwser'
-            ? await getSession({ forceRefresh: true })
-            : await sessionStorage.getValue()
+        let sessionInfo
+        try {
+          sessionInfo =
+            provider?.type === 'fouwser'
+              ? await getSession({ forceRefresh: true })
+              : await sessionStorage.getValue()
+        } catch {
+          toast.error('Authentication failed. Please sign in again.')
+          throw new Error('Authentication failed')
+        }
         const currentMode = modeRef.current
         const enabledMcpServers = enabledMcpServersRef.current
         const customMcpServers = enabledCustomServersRef.current
@@ -531,7 +538,7 @@ export const useChatSession = (options?: ChatSessionOptions) => {
     stop,
     providers,
     selectedProvider,
-    isLoading: isLoadingProviders || isLoadingAgentUrl,
+    isLoading: isLoadingProviders || isLoadingAgentUrl || isLoadingSessionInfo,
     isRestoringConversation,
     agentUrlError,
     chatError,
