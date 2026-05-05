@@ -258,7 +258,7 @@ export const AISettingsPage: FC = () => {
       {isSyncing && (
         <div className="flex items-center gap-2 rounded-lg border px-3 py-2 text-muted-foreground text-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Syncing providers with backend...
+          Syncing providers...
         </div>
       )}
 

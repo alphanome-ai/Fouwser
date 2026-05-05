@@ -123,7 +123,6 @@ export class AiSdkAgent {
         'observe-act-verify',
         'handle-obstacles',
         'error-recovery',
-        'external-integrations',
       )
     }
     const soulContent = await readSoul()
