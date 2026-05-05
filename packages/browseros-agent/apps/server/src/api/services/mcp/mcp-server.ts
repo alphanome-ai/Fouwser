@@ -10,6 +10,10 @@ import type { Browser } from '../../../browser/browser'
 import type { ToolRegistry } from '../../../tools/tool-registry'
 import { MCP_INSTRUCTIONS } from './mcp-prompt'
 import {
+  type ComposioProxyHandle,
+  registerComposioTools,
+} from './register-composio-mcp'
+import {
   type KlavisProxyHandle,
   registerKlavisTools,
 } from './register-klavis-mcp'
@@ -22,6 +26,7 @@ export interface McpServiceDeps {
   executionDir: string
   resourcesDir: string
   klavisProxy?: KlavisProxyHandle | null
+  composioProxy?: ComposioProxyHandle | null
 }
 
 export function createMcpServer(deps: McpServiceDeps): McpServer {
@@ -50,6 +55,11 @@ export function createMcpServer(deps: McpServiceDeps): McpServer {
   // Register Klavis proxy tools (if connected)
   if (deps.klavisProxy) {
     registerKlavisTools(server, deps.klavisProxy)
+  }
+
+  // Register Composio proxy tools (if connected)
+  if (deps.composioProxy) {
+    registerComposioTools(server, deps.composioProxy)
   }
 
   return server

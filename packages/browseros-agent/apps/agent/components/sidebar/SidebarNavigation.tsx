@@ -38,7 +38,7 @@ const primaryNavItems: NavItem[] = [
     icon: PlugZap,
     feature: Feature.MANAGED_MCP_SUPPORT,
   },
-  { name: 'Scheduled Tasks', to: '/scheduled', icon: CalendarClock },
+  // { name: 'Scheduled Tasks', to: '/scheduled', icon: CalendarClock },
   {
     name: 'Skills',
     to: '/home/skills',

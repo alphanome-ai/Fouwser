@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { COMPOSIO_MCP_SERVERS } from '../lib/clients/composio/mcp-servers'
 import { OAUTH_MCP_SERVERS } from '../lib/clients/klavis/oauth-mcp-servers'
 
 /**
@@ -263,7 +264,10 @@ function getExternalIntegrations(
   const isChatMode = options?.chatMode === true
   const connectedApps = options?.connectedApps ?? []
   const declinedApps = options?.declinedApps ?? []
-  const allServerNames = OAUTH_MCP_SERVERS.map((s) => s.name)
+  const allServerNames = [
+    ...OAUTH_MCP_SERVERS.map((s) => s.name),
+    ...COMPOSIO_MCP_SERVERS.map((s) => s.name),
+  ]
 
   // Servers the agent may use via Strata tools
   const connectedList =
@@ -294,9 +298,9 @@ function getExternalIntegrations(
     : '- For not-connected services, call `suggest_app_connection` first. If connection fails/declines, ask for explicit confirmation, then continue with browser automation.'
 
   return `<external_integrations>
-## External Integrations (Klavis Strata)
+## External Integrations (Composio / Klavis Strata)
 
-You have Strata tools (\`discover_server_categories_or_actions\`, \`execute_action\`, etc.) that can interact with external services. However, these tools only work for apps the user has **connected and authenticated**.
+You have integration tools that can interact with external services (Composio and Klavis Strata). These tools only work for apps the user has **connected and authenticated**.
 
 ${connectedList}${declinedNote}
 

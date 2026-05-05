@@ -2,6 +2,7 @@ import { createMCPClient } from '@ai-sdk/mcp'
 import { TIMEOUTS } from '@browseros/shared/constants/timeouts'
 import type { BrowserContext } from '@browseros/shared/schemas/browser-context'
 import type { ToolSet } from 'ai'
+import type { ComposioClient } from '../lib/clients/composio/composio-client'
 import type { KlavisClient } from '../lib/clients/klavis/klavis-client'
 import { logger } from '../lib/logger'
 import {
@@ -20,6 +21,8 @@ export interface McpServerSpecDeps {
   browserContext?: BrowserContext
   klavisClient?: KlavisClient
   browserosId?: string
+  composioClient?: ComposioClient
+  userId?: string
 }
 
 export interface McpClientBundle {
@@ -55,6 +58,26 @@ export async function buildMcpServerSpecs(
       })
     } catch (error) {
       logger.error('Failed to create Klavis Strata MCP server', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  // Composio MCP server
+  if (deps.composioClient && deps.userId) {
+    try {
+      const session = await deps.composioClient.createSession(deps.userId)
+      specs.push({
+        name: 'composio',
+        url: session.mcp.url,
+        transport: 'streamable-http',
+        headers: session.mcp.headers,
+      })
+      logger.info('Added Composio MCP server', {
+        userId: deps.userId.slice(0, 8),
+      })
+    } catch (error) {
+      logger.error('Failed to create Composio MCP server', {
         error: error instanceof Error ? error.message : String(error),
       })
     }

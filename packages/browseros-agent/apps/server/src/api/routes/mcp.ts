@@ -12,6 +12,7 @@ import { metrics } from '../../lib/metrics'
 import { Sentry } from '../../lib/sentry'
 import type { ToolRegistry } from '../../tools/tool-registry'
 import { createMcpServer } from '../services/mcp/mcp-server'
+import type { ComposioProxyHandle } from '../services/mcp/register-composio-mcp'
 import type { KlavisProxyHandle } from '../services/mcp/register-klavis-mcp'
 import type { Env } from '../types'
 
@@ -22,6 +23,7 @@ interface McpRouteDeps {
   executionDir: string
   resourcesDir: string
   klavisProxy?: KlavisProxyHandle | null
+  composioProxy?: ComposioProxyHandle | null
 }
 
 export function createMcpRoutes(deps: McpRouteDeps) {

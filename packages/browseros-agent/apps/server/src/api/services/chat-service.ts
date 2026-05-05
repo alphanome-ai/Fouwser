@@ -14,6 +14,8 @@ import type { SessionStore } from '../../agent/session-store'
 import type { ResolvedAgentConfig } from '../../agent/types'
 import type { Browser } from '../../browser/browser'
 import { getSessionsDir } from '../../lib/browseros-dir'
+import type { ComposioClient } from '../../lib/clients/composio/composio-client'
+import { extractUserId } from '../../lib/clients/composio/user-id'
 import type { KlavisClient } from '../../lib/clients/klavis/klavis-client'
 import { resolveLLMConfig } from '../../lib/clients/llm/config'
 import { logger } from '../../lib/logger'
@@ -25,6 +27,7 @@ import type { BrowserContext, ChatRequest } from '../types'
 export interface ChatServiceDeps {
   sessionStore: SessionStore
   klavisClient: KlavisClient
+  composioClient: ComposioClient
   browser: Browser
   registry: ToolRegistry
   browserosId?: string
@@ -36,6 +39,15 @@ type ProcessMessageOptions = {
 
 export class ChatService {
   constructor(private deps: ChatServiceDeps) {}
+
+  private getUserId(authToken?: string): string | undefined {
+    if (!authToken) return undefined
+    try {
+      return extractUserId(authToken)
+    } catch {
+      return undefined
+    }
+  }
 
   async processMessage(
     request: ChatRequest,
@@ -97,6 +109,7 @@ export class ChatService {
       sessionStore.remove(request.conversationId)
 
       const browserContext = await this.resolvePageIds(request.browserContext)
+      const userId = this.getUserId(request.authToken)
       const agent = await AiSdkAgent.create({
         resolvedConfig: agentConfig,
         browser: this.deps.browser,
@@ -104,6 +117,8 @@ export class ChatService {
         browserContext,
         klavisClient: this.deps.klavisClient,
         browserosId: this.deps.browserosId,
+        composioClient: this.deps.composioClient,
+        userId,
       })
       session = {
         agent,
@@ -149,6 +164,7 @@ export class ChatService {
         }
       }
 
+      const userId = this.getUserId(request.authToken)
       const agent = await AiSdkAgent.create({
         resolvedConfig: agentConfig,
         browser: this.deps.browser,
@@ -156,6 +172,8 @@ export class ChatService {
         browserContext,
         klavisClient: this.deps.klavisClient,
         browserosId: this.deps.browserosId,
+        composioClient: this.deps.composioClient,
+        userId,
       })
       session = {
         agent,

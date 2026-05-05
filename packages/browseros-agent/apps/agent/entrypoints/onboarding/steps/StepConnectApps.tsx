@@ -26,14 +26,12 @@ const RECOMMENDED_APPS = [
 ]
 
 const MORE_APPS = [
+  { name: 'Google Docs' },
   { name: 'GitHub' },
-  { name: 'Vercel' },
   { name: 'Supabase' },
   { name: 'Notion' },
-  { name: 'Slack' },
   { name: 'Linear' },
   { name: 'Jira' },
-  { name: 'Google Docs' },
 ]
 
 export const StepConnectApps = ({
@@ -237,7 +235,7 @@ export const StepConnectApps = ({
               })}
             </div>
             <p className="text-center text-muted-foreground text-xs">
-              40+ apps available in Settings
+              20+ apps available in Settings
             </p>
           </div>
 
