@@ -10,8 +10,8 @@ interface UserMCPIntegrationsList {
   count: number
 }
 
-const getUserMCPIntegrations = async ([hostUrl, authToken]: [hostUrl: string, authToken: string]) => {
-  const response = await fetch(`${hostUrl}/composio/user-integrations`, {
+const getUserMCPIntegrations = async ([hostUrl, endpoint, authToken]: [string, string, string]) => {
+  const response = await fetch(`${hostUrl}/${endpoint}`, {
     headers: {
       Authorization: `Bearer ${authToken}`,
     },
