@@ -26,10 +26,13 @@ export interface ComposioSession {
 }
 
 export class ComposioClient {
-  private composio: Composio
+  private composio: Composio | null = null
 
-  constructor() {
-    this.composio = new Composio()
+  private getClient(): Composio {
+    if (!this.composio) {
+      this.composio = new Composio()
+    }
+    return this.composio
   }
 
   async createSession(userId: string): Promise<ComposioSession> {
@@ -37,7 +40,7 @@ export class ComposioClient {
       userId: userId.slice(0, 8),
     })
 
-    const session = await this.composio.create(userId)
+    const session = await this.getClient().create(userId)
 
     return {
       sessionId: session.sessionId,
