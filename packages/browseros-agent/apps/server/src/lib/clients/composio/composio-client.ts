@@ -30,7 +30,7 @@ export class ComposioClient {
 
   private getClient(): Composio {
     if (!this.composio) {
-      this.composio = new Composio()
+      this.composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY })
     }
     return this.composio
   }
