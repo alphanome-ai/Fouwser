@@ -1,11 +1,16 @@
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { login, loginWithGoogle, register } from '@/lib/auth/auth-client'
+import {
+  isEmailVerificationRequiredMessage,
+  login,
+  loginWithGoogle,
+  register,
+} from '@/lib/auth/auth-client'
 import {
   ONBOARDING_SIGNIN_COMPLETED_EVENT,
   ONBOARDING_SIGNIN_SKIPPED_EVENT,
@@ -20,7 +25,7 @@ interface StepTwoProps {
 }
 
 type AuthMode = 'signin' | 'signup'
-type SignInState = 'idle' | 'loading' | 'error'
+type SignInState = 'idle' | 'loading' | 'error' | 'success'
 
 export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
   const [mode, setMode] = useState<AuthMode>('signin')
@@ -37,7 +42,7 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
     onContinue()
   }
 
-  const handleSkip = () => {
+  const _handleSkip = () => {
     track(ONBOARDING_SIGNIN_SKIPPED_EVENT)
     track(ONBOARDING_STEP_COMPLETED_EVENT, {
       step: 4,
@@ -69,8 +74,12 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
 
       completeStep(mode === 'signup' ? 'password_signup' : 'password')
     } catch (err) {
-      setState('error')
-      setError(err instanceof Error ? err.message : 'Authentication failed')
+      const message =
+        err instanceof Error ? err.message : 'Authentication failed'
+      setState(
+        isEmailVerificationRequiredMessage(message) ? 'success' : 'error',
+      )
+      setError(message)
     }
   }
 
@@ -82,8 +91,12 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
       await loginWithGoogle()
       completeStep(mode === 'signup' ? 'google_signup' : 'google')
     } catch (err) {
-      setState('error')
-      setError(err instanceof Error ? err.message : 'Google sign-in failed')
+      const message =
+        err instanceof Error ? err.message : 'Google sign-in failed'
+      setState(
+        isEmailVerificationRequiredMessage(message) ? 'success' : 'error',
+      )
+      setError(message)
     }
   }
 
@@ -103,9 +116,28 @@ export const StepTwo = ({ direction, onContinue }: StepTwoProps) => {
           </div>
 
           {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" />
-              <AlertDescription>{error}</AlertDescription>
+            <Alert
+              className={
+                state === 'success'
+                  ? 'border-green-500 bg-green-50 dark:bg-green-950/30'
+                  : undefined
+              }
+              variant={state === 'success' ? 'default' : 'destructive'}
+            >
+              {state === 'success' ? (
+                <CheckCircle2 className="size-4 text-green-600 dark:text-green-400" />
+              ) : (
+                <AlertCircle className="size-4" />
+              )}
+              <AlertDescription
+                className={
+                  state === 'success'
+                    ? 'text-green-600 dark:text-green-400'
+                    : undefined
+                }
+              >
+                {error}
+              </AlertDescription>
             </Alert>
           )}
 

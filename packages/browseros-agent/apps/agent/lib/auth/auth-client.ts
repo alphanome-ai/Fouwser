@@ -43,6 +43,14 @@ type RegisterInput = LoginInput & {
 
 const ACCESS_TOKEN_EXPIRY_SKEW_MS = 30_000
 
+export function isEmailVerificationRequiredMessage(message: string): boolean {
+  const normalized = message.toLowerCase()
+  return (
+    normalized.includes('verify your email') ||
+    normalized.includes('verification email')
+  )
+}
+
 const getApiBaseUrl = (): string => {
   const baseUrl = env.VITE_PUBLIC_BROWSEROS_API?.trim()
   if (!baseUrl) {

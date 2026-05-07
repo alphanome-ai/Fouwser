@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
+import { AlertCircle, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react'
 import type { FC } from 'react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import {
+  isEmailVerificationRequiredMessage,
   login,
   loginWithGoogle,
   register,
@@ -22,7 +23,12 @@ import {
 } from '@/lib/auth/auth-client'
 
 type AuthMode = 'signin' | 'signup'
-type AuthState = 'idle' | 'credentials-loading' | 'google-loading' | 'error'
+type AuthState =
+  | 'idle'
+  | 'credentials-loading'
+  | 'google-loading'
+  | 'error'
+  | 'success'
 
 interface LoginPageProps {
   initialMode?: AuthMode
@@ -73,8 +79,12 @@ export const LoginPage: FC<LoginPageProps> = ({ initialMode = 'signin' }) => {
 
       navigate('/home', { replace: true })
     } catch (err) {
-      setState('error')
-      setError(err instanceof Error ? err.message : 'Authentication failed')
+      const message =
+        err instanceof Error ? err.message : 'Authentication failed'
+      setState(
+        isEmailVerificationRequiredMessage(message) ? 'success' : 'error',
+      )
+      setError(message)
     }
   }
 
@@ -86,8 +96,12 @@ export const LoginPage: FC<LoginPageProps> = ({ initialMode = 'signin' }) => {
       await loginWithGoogle()
       navigate('/home', { replace: true })
     } catch (err) {
-      setState('error')
-      setError(err instanceof Error ? err.message : 'Google sign-in failed')
+      const message =
+        err instanceof Error ? err.message : 'Google sign-in failed'
+      setState(
+        isEmailVerificationRequiredMessage(message) ? 'success' : 'error',
+      )
+      setError(message)
     }
   }
 
@@ -127,9 +141,28 @@ export const LoginPage: FC<LoginPageProps> = ({ initialMode = 'signin' }) => {
       </CardHeader>
       <CardContent className="space-y-6">
         {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="size-4" />
-            <AlertDescription>{error}</AlertDescription>
+          <Alert
+            className={
+              state === 'success'
+                ? 'border-green-500 bg-green-50 dark:bg-green-950/30'
+                : undefined
+            }
+            variant={state === 'success' ? 'default' : 'destructive'}
+          >
+            {state === 'success' ? (
+              <CheckCircle2 className="size-4 text-green-600 dark:text-green-400" />
+            ) : (
+              <AlertCircle className="size-4" />
+            )}
+            <AlertDescription
+              className={
+                state === 'success'
+                  ? 'text-green-600 dark:text-green-400'
+                  : undefined
+              }
+            >
+              {error}
+            </AlertDescription>
           </Alert>
         )}
 
