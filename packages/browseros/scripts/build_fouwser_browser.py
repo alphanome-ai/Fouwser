@@ -22,7 +22,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Mapping, Dict, Any
+from typing import Mapping, Dict, Any, Collection
 
 from dotenv import load_dotenv
 
@@ -200,13 +200,85 @@ def run(
 
 
 def require_cmd(name: str) -> None:
-    if not shutil.which(name):
-        die(f"Missing required command: {name}")
+    if shutil.which(name):
+        return
+
+    for candidate in _windows_command_candidates(name):
+        if candidate.is_file():
+            os.environ["PATH"] = (
+                f"{candidate.parent}{os.pathsep}{os.environ.get('PATH', '')}"
+            )
+            log(f"Using {name} from: {candidate}")
+            return
+
+    die(_missing_command_message(name))
+
+
+def _windows_command_candidates(name: str) -> list[Path]:
+    if os.name != "nt":
+        return []
+
+    name_lower = name.lower()
+    if name_lower != "openssl":
+        return []
+
+    env_candidates = [
+        os.environ.get("OPENSSL"),
+        os.environ.get("OPENSSL_PATH"),
+    ]
+    program_files = [
+        os.environ.get("ProgramFiles"),
+        os.environ.get("ProgramFiles(x86)"),
+        os.environ.get("ProgramW6432"),
+    ]
+
+    candidates = [Path(value) for value in env_candidates if value]
+    for base in (Path(value) for value in program_files if value):
+        candidates.extend(
+            [
+                base / "Git/usr/bin/openssl.exe",
+                base / "Git/mingw64/bin/openssl.exe",
+                base / "OpenSSL-Win64/bin/openssl.exe",
+                base / "OpenSSL-Win32/bin/openssl.exe",
+            ]
+        )
+    candidates.append(Path("C:/ProgramData/chocolatey/bin/openssl.exe"))
+    return candidates
+
+
+def _missing_command_message(name: str) -> str:
+    if name.lower() == "openssl":
+        return (
+            "Missing required command: openssl. Install OpenSSL or make openssl.exe "
+            "available in PATH. For builds that do not need local Agent/Controller "
+            "injection, choose INJECT_LOCAL_AGENT=0."
+        )
+    return f"Missing required command: {name}"
 
 
 def require_file(path: Path) -> None:
     if not path.is_file():
         die(f"Missing required file: {path}")
+
+
+def resolve_executable_path(path: Path) -> Path:
+    if path.is_file():
+        return path
+
+    if os.name == "nt" and not path.suffix:
+        exe_path = path.with_suffix(".exe")
+        if exe_path.is_file():
+            return exe_path
+
+    return path
+
+
+def is_executable_file(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    if os.name == "nt":
+        return path.suffix.lower() in {".exe", ".bat", ".cmd", ".com"}
+    return os.access(path, os.X_OK)
 
 
 def _parse_env_file(path: Path) -> dict[str, str]:
@@ -243,7 +315,7 @@ def _prompt_value(
     *,
     prompt: str,
     default: str | None,
-    choices: set[str] | None = None,
+    choices: Collection[str] | None = None,
     secret: bool = False,
 ) -> str:
     if not sys.stdin.isatty():
@@ -251,9 +323,10 @@ def _prompt_value(
             return default
         die(f"{prompt} is required in non-interactive mode")
 
+    choice_items = _choice_items(choices)
     while True:
         suffix = f" [{default}]" if default is not None else " [required]"
-        choice_suffix = f" (options: {', '.join(sorted(choices))})" if choices else ""
+        choice_suffix = f" (options: {', '.join(choice_items)})" if choices else ""
         raw = (
             getpass.getpass(f"{prompt}{suffix}{choice_suffix}: ")
             if secret
@@ -264,9 +337,17 @@ def _prompt_value(
             print("Value is required.")
             continue
         if choices and value not in choices:
-            print(f"Choose one of: {', '.join(sorted(choices))}")
+            print(f"Choose one of: {', '.join(choice_items)}")
             continue
         return value
+
+
+def _choice_items(choices: Collection[str] | None) -> list[str]:
+    if choices is None:
+        return []
+    if isinstance(choices, set):
+        return sorted(choices)
+    return list(choices)
 
 
 def resolve_config_value(
@@ -275,7 +356,7 @@ def resolve_config_value(
     env_values: Mapping[str, str],
     prompt: str,
     default: str | None = None,
-    choices: set[str] | None = None,
+    choices: Collection[str] | None = None,
     secret: bool = False,
 ) -> str:
     value = os.getenv(key)
@@ -286,7 +367,7 @@ def resolve_config_value(
             prompt=prompt, default=default, choices=choices, secret=secret
         )
     if choices and value not in choices:
-        die(f"Invalid value for {key}: {value}. Allowed: {', '.join(sorted(choices))}")
+        die(f"Invalid value for {key}: {value}. Allowed: {', '.join(_choice_items(choices))}")
     return value
 
 
@@ -449,8 +530,24 @@ def pack_extension(
     shutil.move(str(src_crx), str(out_crx))
 
 
+def server_platform_for_target_os(target_os: str) -> str:
+    platforms = {
+        "macos": "darwin",
+        "linux": "linux",
+        "windows": "windows",
+    }
+    try:
+        return platforms[target_os]
+    except KeyError:
+        die(f"Unsupported TARGET_OS for local server artifacts: {target_os}")
+
+
 def build_local_agent_artifacts(
-    root_dir: Path, target_arch: str, server_mode: str, chrome_packer: Path
+    root_dir: Path,
+    target_os: str,
+    target_arch: str,
+    server_mode: str,
+    chrome_packer: Path,
 ) -> Dict[str, Any]:
     log("Building fouwser-agent artifacts...")
     agent_monorepo = root_dir / "packages/browseros-agent"
@@ -497,15 +594,18 @@ def build_local_agent_artifacts(
             encoding="utf-8",
         )
         shim.chmod(0o755)
-        build_env["PATH"] = f"{shim_bin_dir}:{build_env.get('PATH', '')}"
+        build_env["PATH"] = (
+            f"{shim_bin_dir}{os.pathsep}{build_env.get('PATH', '')}"
+        )
 
     run(["bun", "install"], cwd=agent_monorepo, env=build_env)
     run(["bun", "run", "build:agent"], cwd=agent_monorepo, env=build_env)
     run(["bun", "run", "build:ext"], cwd=agent_monorepo, env=build_env)
 
-    server_target = f"darwin-{target_arch}"
-    server_bin_name = f"browseros-server-{server_target}"
-    bun_target_name = f"bun-{server_target}"
+    server_target = f"{server_platform_for_target_os(target_os)}-{target_arch}"
+    executable_suffix = ".exe" if target_os == "windows" else ""
+    server_bin_name = f"browseros-server-{server_target}{executable_suffix}"
+    bun_target_name = f"bun-{server_target}{executable_suffix}"
 
     run(
         [
@@ -706,19 +806,20 @@ def run_main() -> None:
             key="CHROMIUM_SRC", env_values=dotenv_values, prompt="\nCHROMIUM_SRC path"
         )
     )
-    target_arch = resolve_config_value(
-        key="TARGET_ARCH",
-        env_values=dotenv_values,
-        prompt="TARGET_ARCH",
-        default="arm64",
-        choices={"arm64", "x64"},
-    )
     target_os = resolve_config_value(
         key="TARGET_OS",
         env_values=dotenv_values,
         prompt="TARGET_OS",
         default="macos",
-        choices={"macos", "linux", "windows"},
+        choices=("macos", "linux", "windows"),
+    )
+    target_arch_choices = ("x64",) if target_os == "windows" else ("arm64", "x64")
+    target_arch = resolve_config_value(
+        key="TARGET_ARCH",
+        env_values=dotenv_values,
+        prompt="TARGET_ARCH",
+        default="x64" if target_os == "windows" else "arm64",
+        choices=target_arch_choices,
     )
     build_type = resolve_config_value(
         key="BUILD_TYPE",
@@ -755,7 +856,8 @@ def run_main() -> None:
                 prompt="CHROME_PACKER binary path",
             )
         )
-        if not (chrome_packer.is_file() and os.access(chrome_packer, os.X_OK)):
+        chrome_packer = resolve_executable_path(chrome_packer)
+        if not is_executable_file(chrome_packer):
             die(f"Chrome packer binary not found or not executable: {chrome_packer}")
 
     print(
@@ -827,7 +929,7 @@ def run_main() -> None:
     agent_info = None
     if inject_local_agent == "1":
         agent_info = build_local_agent_artifacts(
-            root_dir, target_arch, server_mode, chrome_packer
+            root_dir, target_os, target_arch, server_mode, chrome_packer
         )
 
     # --- Phase B: Run Prep Modules (e.g., clean, git_setup, resources) ---
