@@ -121,11 +121,11 @@ EXECUTION_ORDER = [
         "prep",
         [
             "download_resources",
-            "resources",
-            "bundled_extensions",
             "chromium_replace",
             "string_replaces",
             "patches",
+            "resources",
+            "bundled_extensions",
             "configure",
         ],
     ),
