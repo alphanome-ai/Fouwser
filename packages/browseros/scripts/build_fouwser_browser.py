@@ -97,6 +97,13 @@ DEFAULT_ON_MODULES = {
 }
 
 
+def find_repo_root(start: Path) -> Path:
+    for path in (start, *start.parents):
+        if (path / "packages/browseros/pyproject.toml").is_file():
+            return path
+    die(f"Unable to find repo root from: {start}")
+
+
 def log(message: str) -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"\n[{ts}] {message}")
@@ -690,7 +697,7 @@ def inject_agent_into_chromium(chromium_src: Path, info: Dict[str, Any]) -> None
 
 
 def run_main() -> None:
-    root_dir = Path(__file__).resolve().parent.parent
+    root_dir = find_repo_root(Path(__file__).resolve().parent)
     load_dotenv(root_dir / "packages" / "browseros" / ".env")
     dotenv_values = load_env_values(root_dir)
 
