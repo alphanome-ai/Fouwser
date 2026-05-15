@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { appendFile, mkdir, utimes } from 'node:fs/promises'
+import { appendFile, mkdir, stat, utimes } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { createAgentUIStreamResponse, type UIMessage } from 'ai'
@@ -35,6 +35,15 @@ export interface ChatServiceDeps {
 
 type ProcessMessageOptions = {
   skipCodingPrereq?: boolean
+}
+
+function getErrorCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null || !('code' in error)) {
+    return undefined
+  }
+
+  const code = (error as { code?: unknown }).code
+  return typeof code === 'string' ? code : undefined
 }
 
 export class ChatService {
@@ -339,12 +348,27 @@ export class ChatService {
     }
 
     const dir = request.userWorkingDir ?? fallbackDir
-    await mkdir(dir, { recursive: true })
+    await this.ensureDirectoryExists(dir)
     logger.info('Resolved working directory', {
       mode: request.mode,
       workingDir: dir,
     })
     return dir
+  }
+
+  private async ensureDirectoryExists(dir: string): Promise<void> {
+    try {
+      await mkdir(dir, { recursive: true })
+    } catch (error) {
+      if (getErrorCode(error) !== 'EEXIST') {
+        throw error
+      }
+
+      const existing = await stat(dir).catch(() => undefined)
+      if (!existing?.isDirectory()) {
+        throw error
+      }
+    }
   }
 
   private async ensureConversationLogPath(sessionDir: string): Promise<string> {
