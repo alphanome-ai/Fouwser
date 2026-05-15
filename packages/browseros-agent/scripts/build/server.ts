@@ -285,7 +285,7 @@ async function build(config: BuildConfig): Promise<void> {
   const shouldUploadSourceMaps =
     mode === 'prod' && envVars.SENTRY_AUTH_TOKEN && false
 
-  log.header(`Building BrowserOS server v${version}`)
+  log.header(`Building Fouwser server v${version}`)
   log.info(`Mode: ${mode}`)
   log.info(`Targets: ${targets.join(', ')}`)
 

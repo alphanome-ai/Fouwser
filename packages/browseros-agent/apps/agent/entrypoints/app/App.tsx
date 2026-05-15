@@ -19,7 +19,7 @@ import { SidebarLayout } from './layout/SidebarLayout'
 import { LlmHubPage } from './llm-hub/LlmHubPage'
 import { LoginPage } from './login/LoginPage'
 import { LogoutPage } from './login/LogoutPage'
-import { MagicLinkCallback } from './login/MagicLinkCallback'
+import { SignupPage } from './login/SignupPage'
 import { MCPSettingsPage } from './mcp-settings/MCPSettingsPage'
 import { MemoryPage } from './memory/MemoryPage'
 import { ProfilePage } from './profile/ProfilePage'
@@ -69,9 +69,9 @@ export const App: FC = () => {
         {/* Public auth routes */}
         <Route element={<AuthLayout />}>
           <Route path="login" element={<LoginPage />} />
+          <Route path="signup" element={<SignupPage />} />
           <Route path="logout" element={<LogoutPage />} />
           <Route path="profile" element={<ProfilePage />} />
-          <Route path="auth/magic-link" element={<MagicLinkCallback />} />
         </Route>
 
         {/* Main app with sidebar */}

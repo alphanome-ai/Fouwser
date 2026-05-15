@@ -2,6 +2,7 @@ import { createMCPClient } from '@ai-sdk/mcp'
 import { TIMEOUTS } from '@browseros/shared/constants/timeouts'
 import type { BrowserContext } from '@browseros/shared/schemas/browser-context'
 import type { ToolSet } from 'ai'
+import type { ComposioClient } from '../lib/clients/composio/composio-client'
 import type { KlavisClient } from '../lib/clients/klavis/klavis-client'
 import { logger } from '../lib/logger'
 import {
@@ -20,6 +21,8 @@ export interface McpServerSpecDeps {
   browserContext?: BrowserContext
   klavisClient?: KlavisClient
   browserosId?: string
+  composioClient?: ComposioClient
+  userId?: string
 }
 
 export interface McpClientBundle {
@@ -34,27 +37,47 @@ export async function buildMcpServerSpecs(
   const specs: McpServerSpec[] = []
 
   // Klavis Strata MCP servers
-  if (
-    deps.browserosId &&
-    deps.klavisClient &&
-    deps.browserContext?.enabledMcpServers?.length
-  ) {
+  // if (
+  //   deps.browserosId &&
+  //   deps.klavisClient &&
+  //   deps.browserContext?.enabledMcpServers?.length
+  // ) {
+  //   try {
+  //     const result = await deps.klavisClient.createStrata(
+  //       deps.browserosId,
+  //       deps.browserContext.enabledMcpServers,
+  //     )
+  //     specs.push({
+  //       name: 'klavis-strata',
+  //       url: result.strataServerUrl,
+  //       transport: 'streamable-http',
+  //     })
+  //     logger.info('Added Klavis Strata MCP server', {
+  //       browserosId: deps.browserosId.slice(0, 12),
+  //       servers: deps.browserContext.enabledMcpServers,
+  //     })
+  //   } catch (error) {
+  //     logger.error('Failed to create Klavis Strata MCP server', {
+  //       error: error instanceof Error ? error.message : String(error),
+  //     })
+  //   }
+  // }
+
+  // Composio MCP server
+  if (deps.composioClient && deps.userId) {
     try {
-      const result = await deps.klavisClient.createStrata(
-        deps.browserosId,
-        deps.browserContext.enabledMcpServers,
-      )
+      const session = await deps.composioClient.createSession(deps.userId)
       specs.push({
-        name: 'klavis-strata',
-        url: result.strataServerUrl,
+        name: 'composio',
+        url: session.mcp.url,
         transport: 'streamable-http',
+        headers: session.mcp.headers,
       })
-      logger.info('Added Klavis Strata MCP server', {
-        browserosId: deps.browserosId.slice(0, 12),
-        servers: deps.browserContext.enabledMcpServers,
+      logger.info('Added Composio MCP server', {
+        userId: deps.userId.slice(0, 8),
       })
     } catch (error) {
-      logger.error('Failed to create Klavis Strata MCP server', {
+      logger.error('Failed to create Composio MCP server', {
         error: error instanceof Error ? error.message : String(error),
       })
     }

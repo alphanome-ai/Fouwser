@@ -20,7 +20,7 @@ function sanitizeProviders(list: LlmProviderConfig[]): LlmProviderConfig[] {
       providerType !== 'fouwser' &&
       providerType !== 'browseros' &&
       !(
-        provider.baseUrl === 'https://api.fouwser.com/v1' &&
+        provider.baseUrl === 'https://dapi.fouwser.com' &&
         provider.modelId === 'fouwser-auto'
       )
     )

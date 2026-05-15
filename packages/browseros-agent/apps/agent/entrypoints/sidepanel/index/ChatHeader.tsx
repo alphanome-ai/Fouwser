@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { ChatProviderSelector } from '@/components/chat/ChatProviderSelector'
 import type { Provider } from '@/components/chat/chatComponentTypes'
 import { ThemeToggle } from '@/components/elements/theme-toggle'
+import { Badge } from '@/components/ui/badge'
 // import { productRepositoryUrl } from '@/lib/constants/productUrls'
 import { BrowserOSIcon, ProviderIcon } from '@/lib/llm-providers/providerIcons'
 import type { ProviderType } from '@/lib/llm-providers/types'
@@ -55,8 +56,16 @@ export const ChatHeader: FC<ChatHeaderProps> = ({
                 size={18}
               />
             )}
-            <span className="font-semibold text-base">
-              {selectedProvider.name}
+            <span className="flex items-center gap-2">
+              <span className="font-semibold text-base">
+                {selectedProvider.name}
+              </span>
+              <Badge
+                variant="outline"
+                className="border-border/60 bg-background/70 px-1.5 py-0 font-medium text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
+              >
+                Preview
+              </Badge>
             </span>
           </button>
         </ChatProviderSelector>

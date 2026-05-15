@@ -14,12 +14,14 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { HttpAgentError } from '../agent/errors'
-import { KlavisClient } from '../lib/clients/klavis/klavis-client'
+import { ComposioClient } from '../lib/clients/composio/composio-client'
+// import { KlavisClient } from '../lib/clients/klavis/klavis-client'
 import { logger } from '../lib/logger'
 import { createChatRoutes } from './routes/chat'
+import { createComposioRoutes } from './routes/composio'
 import { createGraphRoutes } from './routes/graph'
 import { createHealthRoute } from './routes/health'
-import { createKlavisRoutes } from './routes/klavis'
+// import { createKlavisRoutes } from './routes/klavis'
 import { createMcpRoutes } from './routes/mcp'
 import { createMemoryRoutes } from './routes/memory'
 import { createProviderRoutes } from './routes/provider'
@@ -29,9 +31,13 @@ import { createSkillsRoutes } from './routes/skills'
 import { createSoulRoutes } from './routes/soul'
 import { createStatusRoute } from './routes/status'
 import {
-  connectKlavisProxy,
-  type KlavisProxyHandle,
-} from './services/mcp/register-klavis-mcp'
+  connectComposioProxy,
+  type ComposioProxyHandle,
+} from './services/mcp/register-composio-mcp'
+// import {
+//   connectKlavisProxy,
+//   type KlavisProxyHandle,
+// } from './services/mcp/register-klavis-mcp'
 import type { Env, HttpServerConfig } from './types'
 import { defaultCorsConfig } from './utils/cors'
 
@@ -75,22 +81,27 @@ export async function createHttpServer(config: HttpServerConfig) {
   const { onShutdown } = config
 
   // Connect Klavis proxy (non-blocking: browser tools still work if this fails)
-  let klavisProxy: KlavisProxyHandle | null = null
-  if (browserosId) {
-    try {
-      klavisProxy = await connectKlavisProxy({
-        klavisClient: new KlavisClient(),
-        browserosId,
-      })
-    } catch (error) {
-      logger.warn(
-        'Failed to connect Klavis proxy, MCP will serve browser tools only',
-        {
-          error: error instanceof Error ? error.message : String(error),
-        },
-      )
-    }
-  }
+  // let klavisProxy: KlavisProxyHandle | null = null
+  // if (browserosId) {
+  //   try {
+  //     klavisProxy = await connectKlavisProxy({
+  //       klavisClient: new KlavisClient(),
+  //       browserosId,
+  //     })
+  //   } catch (error) {
+  //     logger.warn(
+  //       'Failed to connect Klavis proxy, MCP will serve browser tools only',
+  //       {
+  //         error: error instanceof Error ? error.message : String(error),
+  //       },
+  //     )
+  //   }
+  // }
+  const klavisProxy: null = null
+
+  // Composio client (lazy connection — proxy created on first chat request with user ID)
+  const composioClient = new ComposioClient()
+  let composioProxy: ComposioProxyHandle | null = null
 
   const app = new Hono<Env>()
     .use('/*', cors(defaultCorsConfig))
@@ -100,8 +111,14 @@ export async function createHttpServer(config: HttpServerConfig) {
       '/shutdown',
       createShutdownRoute({
         onShutdown: () => {
-          klavisProxy?.close().catch((err) =>
-            logger.warn('Failed to close Klavis proxy transport', {
+          // klavisProxy?.close().catch((err) =>
+          //   logger.warn('Failed to close Klavis proxy transport', {
+          //     error: err instanceof Error ? err.message : String(err),
+          //   }),
+          // )
+          const cp = composioProxy as ComposioProxyHandle | null
+          cp?.close().catch((err: unknown) =>
+            logger.warn('Failed to close Composio proxy transport', {
               error: err instanceof Error ? err.message : String(err),
             }),
           )
@@ -114,7 +131,8 @@ export async function createHttpServer(config: HttpServerConfig) {
     .route('/memory', createMemoryRoutes())
     .route('/skills', createSkillsRoutes())
     .route('/test-provider', createProviderRoutes())
-    .route('/klavis', createKlavisRoutes({ browserosId: browserosId || '' }))
+    // .route('/klavis', createKlavisRoutes({ browserosId: browserosId || '' }))
+    .route('/composio', createComposioRoutes({ composioClient }))
     .route(
       '/mcp',
       createMcpRoutes({
@@ -124,6 +142,7 @@ export async function createHttpServer(config: HttpServerConfig) {
         executionDir,
         resourcesDir,
         klavisProxy,
+        composioProxy,
       }),
     )
     .route(

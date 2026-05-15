@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { appendFile, mkdir, utimes } from 'node:fs/promises'
+import { appendFile, mkdir, stat, utimes } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { createAgentUIStreamResponse, type UIMessage } from 'ai'
@@ -14,6 +14,8 @@ import type { SessionStore } from '../../agent/session-store'
 import type { ResolvedAgentConfig } from '../../agent/types'
 import type { Browser } from '../../browser/browser'
 import { getSessionsDir } from '../../lib/browseros-dir'
+import type { ComposioClient } from '../../lib/clients/composio/composio-client'
+import { extractUserId } from '../../lib/clients/composio/user-id'
 import type { KlavisClient } from '../../lib/clients/klavis/klavis-client'
 import { resolveLLMConfig } from '../../lib/clients/llm/config'
 import { logger } from '../../lib/logger'
@@ -25,6 +27,7 @@ import type { BrowserContext, ChatRequest } from '../types'
 export interface ChatServiceDeps {
   sessionStore: SessionStore
   klavisClient: KlavisClient
+  composioClient: ComposioClient
   browser: Browser
   registry: ToolRegistry
   browserosId?: string
@@ -34,8 +37,26 @@ type ProcessMessageOptions = {
   skipCodingPrereq?: boolean
 }
 
+function getErrorCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null || !('code' in error)) {
+    return undefined
+  }
+
+  const code = (error as { code?: unknown }).code
+  return typeof code === 'string' ? code : undefined
+}
+
 export class ChatService {
   constructor(private deps: ChatServiceDeps) {}
+
+  private getUserId(authToken?: string): string | undefined {
+    if (!authToken) return undefined
+    try {
+      return extractUserId(authToken)
+    } catch {
+      return undefined
+    }
+  }
 
   async processMessage(
     request: ChatRequest,
@@ -61,6 +82,8 @@ export class ChatService {
       apiKey: llmConfig.apiKey,
       baseUrl: llmConfig.baseUrl,
       upstreamProvider: llmConfig.upstreamProvider,
+      authToken: llmConfig.authToken,
+      publicApiBaseUrl: llmConfig.publicApiBaseUrl,
       resourceName: llmConfig.resourceName,
       region: llmConfig.region,
       accessKeyId: llmConfig.accessKeyId,
@@ -95,6 +118,7 @@ export class ChatService {
       sessionStore.remove(request.conversationId)
 
       const browserContext = await this.resolvePageIds(request.browserContext)
+      const userId = this.getUserId(request.authToken)
       const agent = await AiSdkAgent.create({
         resolvedConfig: agentConfig,
         browser: this.deps.browser,
@@ -102,6 +126,8 @@ export class ChatService {
         browserContext,
         klavisClient: this.deps.klavisClient,
         browserosId: this.deps.browserosId,
+        composioClient: this.deps.composioClient,
+        userId,
       })
       session = {
         agent,
@@ -147,6 +173,7 @@ export class ChatService {
         }
       }
 
+      const userId = this.getUserId(request.authToken)
       const agent = await AiSdkAgent.create({
         resolvedConfig: agentConfig,
         browser: this.deps.browser,
@@ -154,6 +181,8 @@ export class ChatService {
         browserContext,
         klavisClient: this.deps.klavisClient,
         browserosId: this.deps.browserosId,
+        composioClient: this.deps.composioClient,
+        userId,
       })
       session = {
         agent,
@@ -319,12 +348,27 @@ export class ChatService {
     }
 
     const dir = request.userWorkingDir ?? fallbackDir
-    await mkdir(dir, { recursive: true })
+    await this.ensureDirectoryExists(dir)
     logger.info('Resolved working directory', {
       mode: request.mode,
       workingDir: dir,
     })
     return dir
+  }
+
+  private async ensureDirectoryExists(dir: string): Promise<void> {
+    try {
+      await mkdir(dir, { recursive: true })
+    } catch (error) {
+      if (getErrorCode(error) !== 'EEXIST') {
+        throw error
+      }
+
+      const existing = await stat(dir).catch(() => undefined)
+      if (!existing?.isDirectory()) {
+        throw error
+      }
+    }
   }
 
   private async ensureConversationLogPath(sessionDir: string): Promise<string> {

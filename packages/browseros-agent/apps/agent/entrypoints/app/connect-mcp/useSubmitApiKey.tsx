@@ -1,5 +1,6 @@
 import useSWRMutation from 'swr/mutation'
 import { useAgentServerUrl } from '@/lib/browseros/useBrowserOSProviders'
+import { useSessionInfo } from '@/lib/auth/sessionStorage'
 
 interface SubmitApiKeyResponse {
   success: boolean
@@ -10,7 +11,9 @@ interface SubmitApiKeyError {
   error: string
 }
 
-const submitApiKey = async (
+const submitApiKey = (
+  authToken: string,
+) => async (
   url: string,
   { arg }: { arg: { serverName: string; apiKey: string; apiKeyUrl: string } },
 ): Promise<SubmitApiKeyResponse> => {
@@ -18,6 +21,7 @@ const submitApiKey = async (
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
     },
     body: JSON.stringify({
       serverName: arg.serverName,
@@ -36,9 +40,11 @@ const submitApiKey = async (
 
 export const useSubmitApiKey = () => {
   const { baseUrl: agentServerUrl } = useAgentServerUrl()
+  const { sessionInfo } = useSessionInfo()
+  const authToken = sessionInfo?.session?.accessToken
 
   return useSWRMutation(
-    agentServerUrl ? `${agentServerUrl}/klavis/servers/submit-api-key` : null,
-    submitApiKey,
+    agentServerUrl && authToken ? `${agentServerUrl}/composio/servers/submit-api-key` : null,
+    submitApiKey(authToken ?? ''),
   )
 }

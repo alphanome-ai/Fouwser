@@ -1,8 +1,12 @@
 import { z } from 'zod'
+import { COMPOSIO_MCP_SERVERS } from '../lib/clients/composio/mcp-servers'
 import { OAUTH_MCP_SERVERS } from '../lib/clients/klavis/oauth-mcp-servers'
 import { defineTool } from './framework'
 
-const appNames = OAUTH_MCP_SERVERS.map((s) => s.name).join(', ')
+const appNames = [
+  ...OAUTH_MCP_SERVERS.map((s) => s.name),
+  ...COMPOSIO_MCP_SERVERS.map((s) => s.name),
+].join(', ')
 
 export const suggest_schedule = defineTool({
   name: 'suggest_schedule',

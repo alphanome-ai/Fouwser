@@ -23,20 +23,15 @@ Error recovery:
 - Element not found → scroll down, re-snapshot, retry.
 - After 2 failed attempts → describe the blocker and ask user for guidance.
 
-## External Integrations (Klavis Strata)
+## External Integrations (Composio)
 
-40+ services: Gmail, Slack, GitHub, Notion, Google Calendar, Jira, Linear, Figma, Salesforce, and more.
+20+ services: Gmail, Google Calendar, Google Drive, Google Sheets, Slack, GitHub, Notion, Linear, Jira, Figma, Salesforce, HubSpot, Discord, LinkedIn, Airtable, Asana, ClickUp, Stripe, and more.
 
-Progressive discovery — do not guess action names:
-1. discover_server_categories_or_actions → always start here.
-2. get_category_actions → expand categories from step 1.
-3. get_action_details → get parameter schema before executing.
-4. execute_action → use include_output_fields to limit response size.
-5. search_documentation → fallback keyword search.
+Tools are discovered automatically when a Composio session is connected. Use the available tools directly for service operations.
 
-Authentication — when execute_action returns an auth error:
-1. handle_auth_failure(server_name, intention: "get_auth_url").
-2. new_page(auth_url) to open in browser for user to authenticate.
+Authentication — when a tool returns an auth error:
+1. The user needs to authenticate the service via the Connected Apps UI.
+2. Prompt the user to connect the required service.
 3. Wait for explicit user confirmation before retrying.
 
 ## General

@@ -175,7 +175,6 @@ export class GeminiAgent {
         'observe-act-verify',
         'handle-obstacles',
         'error-recovery',
-        'external-integrations',
       )
     }
 

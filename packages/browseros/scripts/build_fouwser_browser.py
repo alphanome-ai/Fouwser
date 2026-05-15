@@ -22,7 +22,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Mapping, Dict, Any
+from typing import Mapping, Dict, Any, Collection
 
 from dotenv import load_dotenv
 
@@ -35,11 +35,11 @@ AVAILABLE_MODULES = {
     "git_setup": "Checkout Chromium version and sync dependencies",
     "sparkle_setup": "Download and setup Sparkle framework (macOS only)",
     # "download_resources": "Download resources from Cloudflare R2",
-    "resources": "Copy resources (icons, extensions) to Chromium",
-    "bundled_extensions": "Bundle extensions (local/CDN)",
     "chromium_replace": "Replace Chromium source files with custom versions",
     "string_replaces": "Apply branding string replacements in Chromium",
     "patches": "Apply Fouwser patches to Chromium",
+    "resources": "Copy resources (icons, extensions) to Chromium",
+    "bundled_extensions": "Bundle extensions (local/CDN)",
     "configure": "Configure build with GN",
     # "series_patches": "Apply series-based patches (GNU Quilt format)",
     "compile": "Build Fouwser using autoninja",
@@ -95,6 +95,13 @@ DEFAULT_ON_MODULES = {
     # "sign_macos",
     # "package_macos",
 }
+
+
+def find_repo_root(start: Path) -> Path:
+    for path in (start, *start.parents):
+        if (path / "packages/browseros/pyproject.toml").is_file():
+            return path
+    die(f"Unable to find repo root from: {start}")
 
 
 def log(message: str) -> None:
@@ -193,13 +200,85 @@ def run(
 
 
 def require_cmd(name: str) -> None:
-    if not shutil.which(name):
-        die(f"Missing required command: {name}")
+    if shutil.which(name):
+        return
+
+    for candidate in _windows_command_candidates(name):
+        if candidate.is_file():
+            os.environ["PATH"] = (
+                f"{candidate.parent}{os.pathsep}{os.environ.get('PATH', '')}"
+            )
+            log(f"Using {name} from: {candidate}")
+            return
+
+    die(_missing_command_message(name))
+
+
+def _windows_command_candidates(name: str) -> list[Path]:
+    if os.name != "nt":
+        return []
+
+    name_lower = name.lower()
+    if name_lower != "openssl":
+        return []
+
+    env_candidates = [
+        os.environ.get("OPENSSL"),
+        os.environ.get("OPENSSL_PATH"),
+    ]
+    program_files = [
+        os.environ.get("ProgramFiles"),
+        os.environ.get("ProgramFiles(x86)"),
+        os.environ.get("ProgramW6432"),
+    ]
+
+    candidates = [Path(value) for value in env_candidates if value]
+    for base in (Path(value) for value in program_files if value):
+        candidates.extend(
+            [
+                base / "Git/usr/bin/openssl.exe",
+                base / "Git/mingw64/bin/openssl.exe",
+                base / "OpenSSL-Win64/bin/openssl.exe",
+                base / "OpenSSL-Win32/bin/openssl.exe",
+            ]
+        )
+    candidates.append(Path("C:/ProgramData/chocolatey/bin/openssl.exe"))
+    return candidates
+
+
+def _missing_command_message(name: str) -> str:
+    if name.lower() == "openssl":
+        return (
+            "Missing required command: openssl. Install OpenSSL or make openssl.exe "
+            "available in PATH. For builds that do not need local Agent/Controller "
+            "injection, choose INJECT_LOCAL_AGENT=0."
+        )
+    return f"Missing required command: {name}"
 
 
 def require_file(path: Path) -> None:
     if not path.is_file():
         die(f"Missing required file: {path}")
+
+
+def resolve_executable_path(path: Path) -> Path:
+    if path.is_file():
+        return path
+
+    if os.name == "nt" and not path.suffix:
+        exe_path = path.with_suffix(".exe")
+        if exe_path.is_file():
+            return exe_path
+
+    return path
+
+
+def is_executable_file(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    if os.name == "nt":
+        return path.suffix.lower() in {".exe", ".bat", ".cmd", ".com"}
+    return os.access(path, os.X_OK)
 
 
 def _parse_env_file(path: Path) -> dict[str, str]:
@@ -236,7 +315,7 @@ def _prompt_value(
     *,
     prompt: str,
     default: str | None,
-    choices: set[str] | None = None,
+    choices: Collection[str] | None = None,
     secret: bool = False,
 ) -> str:
     if not sys.stdin.isatty():
@@ -244,9 +323,10 @@ def _prompt_value(
             return default
         die(f"{prompt} is required in non-interactive mode")
 
+    choice_items = _choice_items(choices)
     while True:
         suffix = f" [{default}]" if default is not None else " [required]"
-        choice_suffix = f" (options: {', '.join(sorted(choices))})" if choices else ""
+        choice_suffix = f" (options: {', '.join(choice_items)})" if choices else ""
         raw = (
             getpass.getpass(f"{prompt}{suffix}{choice_suffix}: ")
             if secret
@@ -257,9 +337,17 @@ def _prompt_value(
             print("Value is required.")
             continue
         if choices and value not in choices:
-            print(f"Choose one of: {', '.join(sorted(choices))}")
+            print(f"Choose one of: {', '.join(choice_items)}")
             continue
         return value
+
+
+def _choice_items(choices: Collection[str] | None) -> list[str]:
+    if choices is None:
+        return []
+    if isinstance(choices, set):
+        return sorted(choices)
+    return list(choices)
 
 
 def resolve_config_value(
@@ -268,7 +356,7 @@ def resolve_config_value(
     env_values: Mapping[str, str],
     prompt: str,
     default: str | None = None,
-    choices: set[str] | None = None,
+    choices: Collection[str] | None = None,
     secret: bool = False,
 ) -> str:
     value = os.getenv(key)
@@ -279,7 +367,7 @@ def resolve_config_value(
             prompt=prompt, default=default, choices=choices, secret=secret
         )
     if choices and value not in choices:
-        die(f"Invalid value for {key}: {value}. Allowed: {', '.join(sorted(choices))}")
+        die(f"Invalid value for {key}: {value}. Allowed: {', '.join(_choice_items(choices))}")
     return value
 
 
@@ -303,6 +391,42 @@ def json_get(json_file: Path, key: str) -> str:
     return str(obj[key])
 
 
+def next_extension_build_number(counter_path: Path) -> int:
+    current = 0
+    if counter_path.exists():
+        try:
+            current = int(counter_path.read_text(encoding="utf-8").strip() or "0")
+        except ValueError:
+            current = 0
+
+    next_value = current + 1
+    if next_value > 65535:
+        next_value = 1
+
+    counter_path.write_text(f"{next_value}\n", encoding="utf-8")
+    return next_value
+
+
+def stamp_extension_manifest_version(manifest_path: Path, build_number: int) -> str:
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    raw_version = str(manifest.get("version", "0.0.0"))
+    parts = raw_version.split(".")
+
+    try:
+        ints = [int(part) for part in parts]
+    except ValueError:
+        die(f"Invalid extension version in {manifest_path}: {raw_version}")
+
+    while len(ints) < 3:
+        ints.append(0)
+    ints = ints[:3] + [build_number]
+
+    stamped_version = ".".join(str(part) for part in ints)
+    manifest["version"] = stamped_version
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return stamped_version
+
+
 def ensure_pkcs8_key(key_path: Path) -> None:
     tmp_pkcs8 = key_path.with_suffix(key_path.suffix + ".pk8.tmp")
     result = run(
@@ -320,6 +444,12 @@ def ensure_pkcs8_key(key_path: Path) -> None:
         capture_output=True,
     )
     if result.returncode != 0:
+        if os.environ.get("ALLOW_EXTENSION_KEYGEN") != "1":
+            die(
+                f"Extension key is invalid or unreadable: {key_path}. "
+                "Refusing to generate a replacement because that changes the extension ID. "
+                "Restore the original key or set ALLOW_EXTENSION_KEYGEN=1 to rotate intentionally."
+            )
         log(f"Extension key at {key_path} is invalid; regenerating")
         run(
             [
@@ -352,6 +482,13 @@ def pack_extension(
     src_dir: Path, key_path: Path, out_crx: Path, log_file: Path, chrome_packer: Path
 ) -> None:
     if not key_path.is_file():
+        if os.environ.get("ALLOW_EXTENSION_KEYGEN") != "1":
+            die(
+                f"Missing extension key: {key_path}. "
+                "Refusing to generate a new one because that changes the extension ID "
+                "and breaks OAuth redirect URIs. Restore the key or set "
+                "ALLOW_EXTENSION_KEYGEN=1 to rotate intentionally."
+            )
         log(f"Generating extension key: {key_path}")
         key_path.parent.mkdir(parents=True, exist_ok=True)
         run(
@@ -393,8 +530,24 @@ def pack_extension(
     shutil.move(str(src_crx), str(out_crx))
 
 
+def server_platform_for_target_os(target_os: str) -> str:
+    platforms = {
+        "macos": "darwin",
+        "linux": "linux",
+        "windows": "windows",
+    }
+    try:
+        return platforms[target_os]
+    except KeyError:
+        die(f"Unsupported TARGET_OS for local server artifacts: {target_os}")
+
+
 def build_local_agent_artifacts(
-    root_dir: Path, target_arch: str, server_mode: str, chrome_packer: Path
+    root_dir: Path,
+    target_os: str,
+    target_arch: str,
+    server_mode: str,
+    chrome_packer: Path,
 ) -> Dict[str, Any]:
     log("Building fouwser-agent artifacts...")
     agent_monorepo = root_dir / "packages/browseros-agent"
@@ -409,10 +562,28 @@ def build_local_agent_artifacts(
     work_dir.mkdir(parents=True, exist_ok=True)
     shim_bin_dir.mkdir(parents=True, exist_ok=True)
 
+    if server_mode == "prod":
+        server_env_path = agent_monorepo / "apps/server/.env.production"
+        agent_env_path = agent_monorepo / "apps/agent/.env.production"
+    else:
+        server_env_path = agent_monorepo / "apps/server/.env.development"
+        agent_env_path = agent_monorepo / "apps/agent/.env.development"
+
+    if not server_env_path.exists():
+        die(f"Missing required server env file: {server_env_path}")
+    if not agent_env_path.exists():
+        die(f"Missing required agent env file: {agent_env_path}")
+
     build_env = os.environ.copy()
-    build_env.setdefault("VITE_PUBLIC_BROWSEROS_API", "https://api.fouwser.com")
+    build_env.update(_parse_env_file(server_env_path))
+    build_env.update(_parse_env_file(agent_env_path))
+    build_env.setdefault("VITE_PUBLIC_BROWSEROS_API", "https://dapi.fouwser.com")
     build_env["GRAPHQL_SCHEMA_PATH"] = str(
         agent_monorepo / "apps/agent/schema/schema.graphql"
+    )
+    log(
+        f"Loaded build env files -> server: {server_env_path.name}, "
+        f"agent: {agent_env_path.name}"
     )
 
     if server_mode == "prod" and not shutil.which("sentry-cli"):
@@ -423,23 +594,18 @@ def build_local_agent_artifacts(
             encoding="utf-8",
         )
         shim.chmod(0o755)
-        build_env["PATH"] = f"{shim_bin_dir}:{build_env.get('PATH', '')}"
+        build_env["PATH"] = (
+            f"{shim_bin_dir}{os.pathsep}{build_env.get('PATH', '')}"
+        )
 
     run(["bun", "install"], cwd=agent_monorepo, env=build_env)
     run(["bun", "run", "build:agent"], cwd=agent_monorepo, env=build_env)
     run(["bun", "run", "build:ext"], cwd=agent_monorepo, env=build_env)
 
-    if server_mode == "prod":
-        server_env_path = agent_monorepo / "apps/server/.env.production"
-    else:
-        server_env_path = agent_monorepo / "apps/server/.env.development"
-    if not server_env_path.exists():
-        die(f"Missing required server env file: {server_env_path}")
-    build_env.update(_parse_env_file(server_env_path))
-
-    server_target = f"darwin-{target_arch}"
-    server_bin_name = f"browseros-server-{server_target}"
-    bun_target_name = f"bun-{server_target}"
+    server_target = f"{server_platform_for_target_os(target_os)}-{target_arch}"
+    executable_suffix = ".exe" if target_os == "windows" else ""
+    server_bin_name = f"browseros-server-{server_target}{executable_suffix}"
+    bun_target_name = f"bun-{server_target}{executable_suffix}"
 
     run(
         [
@@ -461,14 +627,33 @@ def build_local_agent_artifacts(
     require_file(controller_dist / "manifest.json")
     require_file(server_dist / server_bin_name)
 
+    if os.environ.get("STAMP_LOCAL_EXTENSION_VERSION", "1") == "1":
+        build_number = next_extension_build_number(
+            key_dir / ".local-extension-build-number"
+        )
+        agent_version = stamp_extension_manifest_version(
+            agent_dist / "manifest.json", build_number
+        )
+        controller_version = stamp_extension_manifest_version(
+            controller_dist / "manifest.json", build_number
+        )
+        log(
+            f"Stamped extension versions for update propagation -> "
+            f"agent: {agent_version}, controller: {controller_version}"
+        )
+    else:
+        agent_version = json_get(agent_dist / "manifest.json", "version")
+        controller_version = json_get(controller_dist / "manifest.json", "version")
+
     log("Packing custom extension CRXs...")
     agent_key, controller_key = key_dir / "agent.pem", key_dir / "controller.pem"
-    # Always rotate extension keys for local injection builds so packaged CRXs
-    # are re-signed with fresh identities every run.
-    for key_path in (agent_key, controller_key):
-        if key_path.exists():
-            key_path.unlink()
-            log(f"Deleted release key: {key_path}")
+    if os.environ.get("ROTATE_EXTENSION_KEYS") == "1":
+        for key_path in (agent_key, controller_key):
+            if key_path.exists():
+                key_path.unlink()
+                log(f"Deleted release key: {key_path}")
+    else:
+        log("Reusing existing extension release keys.")
 
     packed_agent_crx, packed_controller_crx = (
         work_dir / "agent.crx",
@@ -492,8 +677,6 @@ def build_local_agent_artifacts(
 
     agent_id = extension_id_from_pem(agent_key)
     controller_id = extension_id_from_pem(controller_key)
-    agent_version = json_get(agent_dist / "manifest.json", "version")
-    controller_version = json_get(controller_dist / "manifest.json", "version")
 
     log(
         f"Custom IDs -> agent: {agent_id} (v{agent_version}), controller: {controller_id} (v{controller_version})"
@@ -515,6 +698,16 @@ def build_local_agent_artifacts(
         die("Failed to resolve bun binary path")
     shutil.copy2(Path(bun_path), resources_bun_dir / bun_target_name)
     (resources_bun_dir / bun_target_name).chmod(0o755)
+
+    # Write a build version file into the server resources directory.
+    # This ensures the Chromium `bundle_data` directory source detects a change
+    # (Ninja only tracks directory mtime, which doesn't update when files inside
+    # subdirectories are overwritten in-place).
+    build_stamp = datetime.now().isoformat()
+    (resources_server_dir / ".build_version").write_text(
+        f"{agent_version}\n{build_stamp}\n", encoding="utf-8"
+    )
+    log(f"Wrote server build stamp: {build_stamp}")
 
     return {
         "agent_id": agent_id,
@@ -604,7 +797,7 @@ def inject_agent_into_chromium(chromium_src: Path, info: Dict[str, Any]) -> None
 
 
 def run_main() -> None:
-    root_dir = Path(__file__).resolve().parent.parent
+    root_dir = find_repo_root(Path(__file__).resolve().parent)
     load_dotenv(root_dir / "packages" / "browseros" / ".env")
     dotenv_values = load_env_values(root_dir)
 
@@ -613,19 +806,20 @@ def run_main() -> None:
             key="CHROMIUM_SRC", env_values=dotenv_values, prompt="\nCHROMIUM_SRC path"
         )
     )
-    target_arch = resolve_config_value(
-        key="TARGET_ARCH",
-        env_values=dotenv_values,
-        prompt="TARGET_ARCH",
-        default="arm64",
-        choices={"arm64", "x64"},
-    )
     target_os = resolve_config_value(
         key="TARGET_OS",
         env_values=dotenv_values,
         prompt="TARGET_OS",
         default="macos",
-        choices={"macos", "linux", "windows"},
+        choices=("macos", "linux", "windows"),
+    )
+    target_arch_choices = ("x64",) if target_os == "windows" else ("arm64", "x64")
+    target_arch = resolve_config_value(
+        key="TARGET_ARCH",
+        env_values=dotenv_values,
+        prompt="TARGET_ARCH",
+        default="x64" if target_os == "windows" else "arm64",
+        choices=target_arch_choices,
     )
     build_type = resolve_config_value(
         key="BUILD_TYPE",
@@ -662,7 +856,8 @@ def run_main() -> None:
                 prompt="CHROME_PACKER binary path",
             )
         )
-        if not (chrome_packer.is_file() and os.access(chrome_packer, os.X_OK)):
+        chrome_packer = resolve_executable_path(chrome_packer)
+        if not is_executable_file(chrome_packer):
             die(f"Chrome packer binary not found or not executable: {chrome_packer}")
 
     print(
@@ -734,7 +929,7 @@ def run_main() -> None:
     agent_info = None
     if inject_local_agent == "1":
         agent_info = build_local_agent_artifacts(
-            root_dir, target_arch, server_mode, chrome_packer
+            root_dir, target_os, target_arch, server_mode, chrome_packer
         )
 
     # --- Phase B: Run Prep Modules (e.g., clean, git_setup, resources) ---

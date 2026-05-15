@@ -53,6 +53,8 @@ export class ChatV2Service {
       apiKey: llmConfig.apiKey,
       baseUrl: llmConfig.baseUrl,
       upstreamProvider: llmConfig.upstreamProvider,
+      authToken: llmConfig.authToken,
+      publicApiBaseUrl: llmConfig.publicApiBaseUrl,
       resourceName: llmConfig.resourceName,
       region: llmConfig.region,
       accessKeyId: llmConfig.accessKeyId,

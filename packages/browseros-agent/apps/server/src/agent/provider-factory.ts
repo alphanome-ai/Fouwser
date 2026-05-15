@@ -7,7 +7,7 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import { LLM_PROVIDERS } from '@browseros/shared/schemas/llm'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import type { LanguageModel } from 'ai'
-import { logger } from '../lib/logger'
+import { createFouwserLanguageModel } from '../lib/clients/llm/fouwser-model'
 import { createOpenRouterCompatibleFetch } from '../lib/openrouter-fetch'
 import type { ResolvedAgentConfig } from './types'
 
@@ -100,28 +100,21 @@ function createBedrockFactory(
 function createBrowserOSFactory(
   config: ResolvedAgentConfig,
 ): (modelId: string) => unknown {
-  if (!config.baseUrl) throw new Error('BrowserOS provider requires baseUrl')
-  const { baseUrl, apiKey, upstreamProvider } = config
-
-  if (upstreamProvider === LLM_PROVIDERS.OPENROUTER) {
-    return createOpenRouter({
-      baseURL: baseUrl,
-      ...(apiKey && { apiKey }),
-      fetch: createOpenRouterCompatibleFetch(),
+  return (modelId: string) =>
+    createFouwserLanguageModel({
+      ...config,
+      model: modelId,
     })
-  }
-  if (upstreamProvider === LLM_PROVIDERS.ANTHROPIC) {
-    return createAnthropic({ baseURL: baseUrl, ...(apiKey && { apiKey }) })
-  }
-  if (upstreamProvider === LLM_PROVIDERS.AZURE) {
-    return createAzure({ baseURL: baseUrl, ...(apiKey && { apiKey }) })
-  }
-  logger.info('creating openai-compatible')
-  return createOpenAICompatible({
-    name: 'browseros',
-    baseURL: baseUrl,
-    ...(apiKey && { apiKey }),
-  })
+}
+
+function createFouwserFactory(
+  config: ResolvedAgentConfig,
+): (modelId: string) => unknown {
+  return (modelId: string) =>
+    createFouwserLanguageModel({
+      ...config,
+      model: modelId,
+    })
 }
 
 function createOpenAICompatibleFactory(
@@ -171,6 +164,7 @@ const PROVIDER_FACTORIES: Record<string, ProviderFactory> = {
   [LLM_PROVIDERS.LMSTUDIO]: createLMStudioFactory,
   [LLM_PROVIDERS.OLLAMA]: createOllamaFactory,
   [LLM_PROVIDERS.BEDROCK]: createBedrockFactory,
+  [LLM_PROVIDERS.FOUWSER]: createFouwserFactory,
   [LLM_PROVIDERS.BROWSEROS]: createBrowserOSFactory,
   [LLM_PROVIDERS.OPENAI_COMPATIBLE]: createOpenAICompatibleFactory,
   [LLM_PROVIDERS.MOONSHOT]: createMoonshotFactory,

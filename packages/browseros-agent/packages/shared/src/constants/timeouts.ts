@@ -31,6 +31,7 @@ export const TIMEOUTS = {
 
   // External API calls
   KLAVIS_FETCH: 30_000,
+  COMPOSIO_FETCH: 30_000,
 
   // Navigation/DOM
   NAVIGATION: 10_000,

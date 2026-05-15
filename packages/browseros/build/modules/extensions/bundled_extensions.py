@@ -34,14 +34,14 @@ class BundledExtensionsModule(CommandModule):
     requires = []
     description = "Build local Agent/Controller (default) or download CDN extensions"
 
-    def validate(self, ctx: Context) -> None:
-        if not ctx.chromium_src or not ctx.chromium_src.exists():
+    def validate(self, context: Context) -> None:
+        if not context.chromium_src or not context.chromium_src.exists():
             raise ValidationError(
-                f"Chromium source directory not found: {ctx.chromium_src}"
+                f"Chromium source directory not found: {context.chromium_src}"
             )
 
-    def execute(self, ctx: Context) -> None:
-        output_dir = self._get_output_dir(ctx)
+    def execute(self, context: Context) -> None:
+        output_dir = self._get_output_dir(context)
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Default to local mode unless explicitly told to use the CDN
@@ -51,10 +51,10 @@ class BundledExtensionsModule(CommandModule):
             log_info(
                 "\n📦 [LOCAL MODE] Building and bundling local extensions (Default)..."
             )
-            extensions = self._build_and_pack_local(ctx, output_dir)
+            extensions = self._build_and_pack_local(context, output_dir)
         else:
             log_info("\n📦 [CDN MODE] Bundling extensions from CDN manifest...")
-            manifest_url = ctx.get_extensions_manifest_url()
+            manifest_url = context.get_extensions_manifest_url()
             extensions = self._fetch_and_parse_manifest(manifest_url)
 
             if not extensions:
@@ -70,10 +70,10 @@ class BundledExtensionsModule(CommandModule):
         mode_str = "CDN" if use_cdn else "local"
         log_success(f"Bundled {len(extensions)} {mode_str} extensions successfully")
 
-    def _get_output_dir(self, ctx: Context) -> Path:
+    def _get_output_dir(self, context: Context) -> Path:
         """Get the bundled extensions output directory in Chromium source"""
         return (
-            ctx.chromium_src / "chrome" / "browser" / "browseros" / "bundled_extensions"
+            context.chromium_src / "chrome" / "browser" / "browseros" / "bundled_extensions"
         )
 
     # -------------------------------------------------------------------------
@@ -106,9 +106,9 @@ class BundledExtensionsModule(CommandModule):
         agent_key = key_dir / "agent.pem"
         controller_key = key_dir / "controller.pem"
 
-        log_info("  Generating keys and packing .crx files...")
-        agent_id = self._get_or_create_extension_id(agent_key)
-        controller_id = self._get_or_create_extension_id(controller_key)
+        log_info("  Using extension release keys and packing .crx files...")
+        agent_id = self._get_extension_id(agent_key)
+        controller_id = self._get_extension_id(controller_key)
 
         agent_crx = output_dir / f"{agent_id}.crx"
         controller_crx = output_dir / f"{controller_id}.crx"
@@ -162,9 +162,22 @@ class BundledExtensionsModule(CommandModule):
 
         shutil.move(str(src_crx), str(out_crx))
 
-    def _get_or_create_extension_id(self, key_path: Path) -> str:
-        """Generate a PKCS8 key if it doesn't exist, and extract the Chrome extension ID."""
+    def _should_allow_keygen(self) -> bool:
+        """Allow key generation only when explicitly requested."""
+        return os.environ.get("ALLOW_EXTENSION_KEYGEN") == "1"
+
+    def _get_extension_id(self, key_path: Path) -> str:
+        """Extract the Chrome extension ID from an existing private key."""
         if not key_path.is_file():
+            if not self._should_allow_keygen():
+                raise RuntimeError(
+                    f"Missing extension key: {key_path}. "
+                    "Builds do not generate release keys by default because that changes "
+                    "the extension ID and breaks OAuth redirect URIs. "
+                    "Restore the existing key or set ALLOW_EXTENSION_KEYGEN=1 to generate "
+                    "a new one intentionally."
+                )
+            log_info(f"  Generating missing extension key: {key_path.name}")
             subprocess.run(
                 [
                     "openssl",
@@ -195,6 +208,13 @@ class BundledExtensionsModule(CommandModule):
             capture_output=True,
         )
         if res.returncode != 0:
+            if not self._should_allow_keygen():
+                raise RuntimeError(
+                    f"Extension key is invalid or unreadable: {key_path}. "
+                    "Refusing to generate a replacement automatically because that would "
+                    "change the extension ID. Restore the original key or set "
+                    "ALLOW_EXTENSION_KEYGEN=1 to rotate intentionally."
+                )
             subprocess.run(
                 [
                     "openssl",

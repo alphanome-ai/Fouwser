@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { type FC, useMemo, useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -50,7 +51,7 @@ export const AISettingsPage: FC = () => {
 
   const userId = sessionInfo.user?.id
 
-  const { data: profileData } = useGraphqlQuery(
+  const { data: profileData, isLoading: isLoadingProfile } = useGraphqlQuery(
     GetProfileIdByUserIdDocument,
     // biome-ignore lint/style/noNonNullAssertion: guarded by enabled
     { userId: userId! },
@@ -58,12 +59,18 @@ export const AISettingsPage: FC = () => {
   )
   const profileId = profileData?.profileByUserId?.rowId
 
-  const { data: remoteProvidersData } = useGraphqlQuery(
+  const {
+    data: remoteProvidersData,
+    isLoading: isLoadingRemoteProviders,
+    isFetching: isFetchingRemoteProviders,
+  } = useGraphqlQuery(
     GetRemoteLlmProvidersDocument,
     // biome-ignore lint/style/noNonNullAssertion: guarded by enabled
     { profileId: profileId! },
     { enabled: !!profileId },
   )
+
+  const isSyncing = isLoadingProfile || isLoadingRemoteProviders || isFetchingRemoteProviders
 
   const deleteRemoteProviderMutation = useGraphqlMutation(
     DeleteRemoteLlmProviderDocument,
@@ -247,6 +254,13 @@ export const AISettingsPage: FC = () => {
         onEditProvider={handleEditProvider}
         onDeleteProvider={handleDeleteProvider}
       />
+
+      {isSyncing && (
+        <div className="flex items-center gap-2 rounded-lg border px-3 py-2 text-muted-foreground text-sm">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Syncing providers...
+        </div>
+      )}
 
       <IncompleteProvidersList
         providers={incompleteProviders}

@@ -86,12 +86,12 @@ const primarySettingsSections: NavSection[] = [
         feature: Feature.CUSTOMIZATION_SUPPORT,
       },
       // { name: 'BrowserOS as MCP', to: '/settings/mcp', icon: Server },
-      {
-        name: 'Workflows',
-        to: '/workflows',
-        icon: GitBranch,
-        feature: Feature.WORKFLOW_SUPPORT,
-      },
+      // {
+      //   name: 'Workflows',
+      //   to: '/workflows',
+      //   icon: GitBranch,
+      //   feature: Feature.WORKFLOW_SUPPORT,
+      // },
     ],
   },
 ]

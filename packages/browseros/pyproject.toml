@@ -16,6 +16,7 @@ dependencies = [
   "python-dotenv>=1.0.0",
   "Pillow>=10.0.0",
   "cryptography>=41.0.0",
+  "dotenv>=0.9.9",
 ]
 
 [project.scripts]

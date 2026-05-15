@@ -1,10 +1,31 @@
 import { storage } from '@wxt-dev/storage'
-import type { Session, User } from 'better-auth/types'
 import { useEffect, useState } from 'react'
 
-interface SessionInfo {
-  session?: Session
-  user?: User
+export interface AuthSession {
+  accessToken: string
+  refreshToken: string
+  tokenType: string
+}
+
+export interface AuthUser {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  avatarUrl: string | null
+  isActive: boolean
+  emailVerified: boolean
+  role: string
+  lastLoginAt: string | null
+  createdAt: string
+  updatedAt: string
+  name: string
+  image: string | null
+}
+
+export interface SessionInfo {
+  session?: AuthSession
+  user?: AuthUser
 }
 
 export const sessionStorage = storage.defineItem<SessionInfo>(
@@ -33,5 +54,9 @@ export const useSessionInfo = () => {
     await sessionStorage.setValue(info)
   }
 
-  return { sessionInfo, isLoading, updateSessionInfo }
+  const clearSessionInfo = async () => {
+    await sessionStorage.setValue({})
+  }
+
+  return { sessionInfo, isLoading, updateSessionInfo, clearSessionInfo }
 }

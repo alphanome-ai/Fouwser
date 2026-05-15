@@ -1,20 +1,20 @@
 import useSWRMutation from 'swr/mutation'
 import { useAgentServerUrl } from '@/lib/browseros/useBrowserOSProviders'
+import { useSessionInfo } from '@/lib/auth/sessionStorage'
 
 interface AddServerResponse {
   success: boolean
   serverName: string
-  strataId: string
-  addedServers: string[]
-  oauthUrl?: string
-  apiKeyUrl?: string
+  mcpUrl?: string
 }
 
 interface AddServerError {
   error: string
 }
 
-const addManagedServer = async (
+const addManagedServer = (
+  authToken: string,
+) => async (
   url: string,
   { arg }: { arg: { serverName: string } },
 ): Promise<AddServerResponse> => {
@@ -22,6 +22,7 @@ const addManagedServer = async (
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
     },
     body: JSON.stringify({ serverName: arg.serverName }),
   })
@@ -36,9 +37,11 @@ const addManagedServer = async (
 
 export const useAddManagedServer = () => {
   const { baseUrl: agentServerUrl } = useAgentServerUrl()
+  const { sessionInfo } = useSessionInfo()
+  const authToken = sessionInfo?.session?.accessToken
 
   return useSWRMutation(
-    agentServerUrl ? `${agentServerUrl}/klavis/servers/add` : null,
-    addManagedServer,
+    agentServerUrl && authToken ? `${agentServerUrl}/composio/servers/add` : null,
+    addManagedServer(authToken ?? ''),
   )
 }

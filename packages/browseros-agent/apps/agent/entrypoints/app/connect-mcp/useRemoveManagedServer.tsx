@@ -1,5 +1,6 @@
 import useSWRMutation from 'swr/mutation'
 import { useAgentServerUrl } from '@/lib/browseros/useBrowserOSProviders'
+import { useSessionInfo } from '@/lib/auth/sessionStorage'
 
 interface RemoveServerResponse {
   success: boolean
@@ -10,7 +11,9 @@ interface RemoveServerError {
   error: string
 }
 
-const removeManagedServer = async (
+const removeManagedServer = (
+  authToken: string,
+) => async (
   url: string,
   { arg }: { arg: { serverName: string } },
 ): Promise<RemoveServerResponse> => {
@@ -18,6 +21,7 @@ const removeManagedServer = async (
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
     },
     body: JSON.stringify({ serverName: arg.serverName }),
   })
@@ -32,9 +36,11 @@ const removeManagedServer = async (
 
 export const useRemoveManagedServer = () => {
   const { baseUrl: agentServerUrl } = useAgentServerUrl()
+  const { sessionInfo } = useSessionInfo()
+  const authToken = sessionInfo?.session?.accessToken
 
   return useSWRMutation(
-    agentServerUrl ? `${agentServerUrl}/klavis/servers/remove` : null,
-    removeManagedServer,
+    agentServerUrl && authToken ? `${agentServerUrl}/composio/servers/remove` : null,
+    removeManagedServer(authToken ?? ''),
   )
 }

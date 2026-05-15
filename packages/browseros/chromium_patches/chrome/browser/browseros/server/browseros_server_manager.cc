@@ -1031,7 +1031,7 @@ index 0000000000000..9cd8a510e86ec
 +    LOG(ERROR) << "browseros: Failed to get executable directory";
 +    return base::FilePath();
 +  }
-+  exe_dir = exe_dir.AppendASCII(version_info::GetVersionNumber());
++  // exe_dir = exe_dir.AppendASCII(version_info::GetVersionNumber());
 +
 +#elif BUILDFLAG(IS_LINUX)
 +  if (!base::PathService::Get(base::DIR_EXE, &exe_dir)) {

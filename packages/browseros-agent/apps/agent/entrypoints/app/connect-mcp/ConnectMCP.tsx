@@ -1,7 +1,9 @@
-import { Check, Loader2, Plus, Server, Trash2 } from 'lucide-react'
+import { Check, Loader2, LogIn, Plus, Server, Trash2 } from 'lucide-react'
 import { type FC, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { useSession } from '@/lib/auth/auth-client'
 import {
   CUSTOM_MCP_ADDED_EVENT,
   MANAGED_MCP_ADDED_EVENT,
@@ -35,6 +37,8 @@ const failedToRemoveMcp = (serverName: string, e: unknown) => {
  * @public
  */
 export const ConnectMCP: FC = () => {
+  const { data: session, isPending: isSessionPending } = useSession()
+  const navigate = useNavigate()
   const { servers: createdServers, addServer, removeServer } = useMcpServers()
   const [addingManagedMcp, setAddingManagedMcp] = useState(false)
   const [addingCustomMcp, setAddingCustomMcp] = useState(false)
@@ -207,6 +211,44 @@ export const ConnectMCP: FC = () => {
         })
       }
     }
+  }
+
+  if (isSessionPending) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (!session) {
+    return (
+      <div className="fade-in slide-in-from-bottom-5 animate-in space-y-6 duration-500">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <div className="flex flex-col items-center gap-4 py-8 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <LogIn className="h-7 w-7 text-[var(--accent-orange)]" />
+            </div>
+            <div>
+              <h2 className="mb-2 font-semibold text-xl">
+                Sign in to connect apps
+              </h2>
+              <p className="mb-6 max-w-md text-muted-foreground text-sm">
+                Sign in to connect Fouwser assistant to your favorite apps like
+                Gmail, Calendar, and more.
+              </p>
+              <Button
+                onClick={() => navigate('/login')}
+                className="bg-[var(--accent-orange)] text-white hover:bg-[var(--accent-orange)]/90"
+              >
+                <LogIn className="h-4 w-4" />
+                Sign in
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -1,4 +1,4 @@
-# BrowserOS Server Binaries - Track with Git LFS
+# Fouwser Server Binaries - Track with Git LFS
 resources/binaries/browseros_server/* filter=lfs diff=lfs merge=lfs -text
 resources/binaries/codex/ filter=lfs diff=lfs merge=lfs -text
 resources/binaries/browseros_server/ filter=lfs diff=lfs merge=lfs -text

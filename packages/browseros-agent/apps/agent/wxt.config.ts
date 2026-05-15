@@ -57,6 +57,7 @@ export default defineConfig({
       'tabs',
       'storage',
       'sidePanel',
+      'identity',
       'browserOS',
       'alarms',
     ],
@@ -81,6 +82,7 @@ export default defineConfig({
               org: env.SENTRY_ORG,
               project: env.SENTRY_PROJECT,
               authToken: env.SENTRY_AUTH_TOKEN,
+              telemetry: false,
               sourcemaps: {
                 // Bug with sentry & WXT - refer: https://github.com/wxt-dev/wxt/issues/1735
                 // filesToDeleteAfterUpload: ['./dist/**/*.map'],

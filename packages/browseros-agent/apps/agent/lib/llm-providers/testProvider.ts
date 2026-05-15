@@ -1,3 +1,5 @@
+import { getSession } from '@/lib/auth/auth-client'
+import { env } from '@/lib/env'
 import type { LlmProviderConfig } from './types'
 
 /**
@@ -19,6 +21,10 @@ export async function testProvider(
   agentServerUrl: string,
 ): Promise<TestResult> {
   const startTime = performance.now()
+  const sessionInfo =
+    provider.type === 'fouwser'
+      ? await getSession({ forceRefresh: true })
+      : null
 
   try {
     const response = await fetch(`${agentServerUrl}/test-provider`, {
@@ -36,6 +42,14 @@ export async function testProvider(
         accessKeyId: provider.accessKeyId,
         secretAccessKey: provider.secretAccessKey,
         sessionToken: provider.sessionToken,
+        authToken:
+          provider.type === 'fouwser'
+            ? sessionInfo?.session?.accessToken
+            : undefined,
+        publicApiBaseUrl:
+          provider.type === 'fouwser'
+            ? env.VITE_PUBLIC_BROWSEROS_API
+            : undefined,
       }),
     })
 

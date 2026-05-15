@@ -3,12 +3,14 @@ import { DefaultChatTransport } from 'ai'
 import { compact } from 'es-toolkit/array'
 import { useEffect, useRef, useState } from 'react'
 import { useChatRefs } from '@/entrypoints/sidepanel/index/useChatRefs'
+import { getSession } from '@/lib/auth/auth-client'
 import { useAgentServerUrl } from '@/lib/browseros/useBrowserOSProviders'
 import {
   WORKFLOW_RUN_COMPLETED_EVENT,
   WORKFLOW_RUN_RETRIED_EVENT,
   WORKFLOW_RUN_STOPPED_EVENT,
 } from '@/lib/constants/analyticsEvents'
+import { env } from '@/lib/env'
 import { track } from '@/lib/metrics/track'
 
 type WorkflowMessageMetadata = {
@@ -44,6 +46,10 @@ export const useRunWorkflow = () => {
           | WorkflowMessageMetadata
           | undefined
         const provider = selectedLlmProviderRef.current
+        const sessionInfo =
+          provider?.type === 'fouwser'
+            ? await getSession({ forceRefresh: true })
+            : null
         const enabledMcpServers = enabledMcpServersRef.current
         const customMcpServers = enabledCustomServersRef.current
 
@@ -53,7 +59,7 @@ export const useRunWorkflow = () => {
             provider: provider?.type,
             providerType: provider?.type,
             providerName: provider?.name,
-            model: provider?.modelId ?? 'browseros',
+            model: provider?.modelId ?? 'default',
             contextWindowSize: provider?.contextWindow,
             temperature: provider?.temperature,
             resourceName: provider?.resourceName,
@@ -63,6 +69,14 @@ export const useRunWorkflow = () => {
             sessionToken: provider?.sessionToken,
             apiKey: provider?.apiKey,
             baseUrl: provider?.baseUrl,
+            authToken:
+              provider?.type === 'fouwser'
+                ? sessionInfo?.session?.accessToken
+                : undefined,
+            publicApiBaseUrl:
+              provider?.type === 'fouwser'
+                ? env.VITE_PUBLIC_BROWSEROS_API
+                : undefined,
             browserContext: {
               windowId: metadata?.window?.id,
               activeTab: metadata?.window?.tabs?.[0],

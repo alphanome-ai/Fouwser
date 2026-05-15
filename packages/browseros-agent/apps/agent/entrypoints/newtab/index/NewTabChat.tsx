@@ -42,6 +42,8 @@ export const NewTabChat: FC<NewTabChatProps> = ({ onBackToSearch }) => {
     selectedProvider,
     handleSelectProvider,
     resetConversation,
+    requiresChatSignIn,
+    openFouwserSignIn,
   } = useChatSessionContext()
 
   const [input, setInput] = useState('')
@@ -83,6 +85,10 @@ export const NewTabChat: FC<NewTabChatProps> = ({ onBackToSearch }) => {
   const executeMessage = (customMessageText?: string) => {
     const messageText = customMessageText ? customMessageText : input.trim()
     if (!messageText) return
+    if (requiresChatSignIn) {
+      void openFouwserSignIn()
+      return
+    }
 
     if (attachedTabs.length) {
       const action = createBrowserOSAction({
@@ -90,9 +96,11 @@ export const NewTabChat: FC<NewTabChatProps> = ({ onBackToSearch }) => {
         message: messageText,
         tabs: attachedTabs,
       })
-      sendMessage({ text: messageText, action })
+      const wasSent = sendMessage({ text: messageText, action })
+      if (!wasSent) return
     } else {
-      sendMessage({ text: messageText })
+      const wasSent = sendMessage({ text: messageText })
+      if (!wasSent) return
     }
     setInput('')
     setAttachedTabs([])
@@ -168,6 +176,10 @@ export const NewTabChat: FC<NewTabChatProps> = ({ onBackToSearch }) => {
           attachedTabs={attachedTabs}
           onToggleTab={toggleTabSelection}
           onRemoveTab={removeTab}
+          requiresChatSignIn={requiresChatSignIn}
+          onSignInToFouwser={() => {
+            void openFouwserSignIn()
+          }}
         />
       </div>
     </div>

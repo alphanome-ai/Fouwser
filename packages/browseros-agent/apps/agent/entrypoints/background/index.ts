@@ -11,7 +11,6 @@ import {
 import { fetchMcpTools } from '@/lib/mcp/client'
 import { onServerMessage } from '@/lib/messaging/server/serverMessages'
 import { onOpenSidePanelWithSearch } from '@/lib/messaging/sidepanel/openSidepanelWithSearch'
-import { authRedirectPathStorage } from '@/lib/onboarding/onboardingStorage'
 import { syncOnboardingProfile } from '@/lib/onboarding/syncOnboardingProfile'
 import {
   setupScheduledJobsSyncToBackend,
@@ -133,24 +132,6 @@ export default defineBackground(() => {
   })
 
   chrome.runtime.onMessage.addListener((message, sender) => {
-    if (message?.type === 'AUTH_SUCCESS' && sender.tab?.id) {
-      const tabId = sender.tab.id
-      authRedirectPathStorage
-        .getValue()
-        .then((redirectPath) => {
-          const hash = redirectPath || '/home'
-          chrome.tabs.update(tabId, {
-            url: chrome.runtime.getURL(`app.html#${hash}`),
-          })
-          if (redirectPath) authRedirectPathStorage.removeValue()
-        })
-        .catch(() => {
-          chrome.tabs.update(tabId, {
-            url: chrome.runtime.getURL('app.html#/home'),
-          })
-        })
-    }
-
     if (message?.type === 'stop-agent' && message?.conversationId) {
       stopAgentStorage.setValue({
         conversationId: message.conversationId,

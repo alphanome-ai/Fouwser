@@ -165,3 +165,9 @@ copy_operations:
     source: "resources/binaries/browseros_server/index.js"
     destination: "chrome/browser/browseros/server/resources/index.js"
     type: "file"
+
+  # Build version stamp - forces Ninja to re-bundle resources/ on each build
+  - name: "BrowserOS Server Build Stamp"
+    source: "resources/binaries/browseros_server/.build_version"
+    destination: "chrome/browser/browseros/server/resources/.build_version"
+    type: "file"
