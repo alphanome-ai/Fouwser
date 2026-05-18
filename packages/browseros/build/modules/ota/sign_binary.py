@@ -198,11 +198,14 @@ def sign_windows_binary(
     binary_path: Path,
     env: Optional[EnvConfig] = None,
 ) -> bool:
-    """Sign a Windows binary with SSL.com CodeSignTool
+    """Sign a Windows binary using the configured provider (SSL.com or Azure).
+
+    Delegates to the shared sign_binaries() router in modules/sign/windows.py
+    which dispatches based on WINDOWS_SIGN_PROVIDER env var.
 
     Args:
         binary_path: Path to binary to sign
-        env: Environment config with eSigner credentials
+        env: Environment config with signing credentials
 
     Returns:
         True on success, False on failure
@@ -210,88 +213,8 @@ def sign_windows_binary(
     if env is None:
         env = EnvConfig()
 
-    # Prefer CODE_SIGN_TOOL_EXE (direct path), fall back to CODE_SIGN_TOOL_PATH + .bat
-    if env.code_sign_tool_exe:
-        codesigntool_path = Path(env.code_sign_tool_exe)
-    elif env.code_sign_tool_path:
-        codesigntool_path = Path(env.code_sign_tool_path) / "CodeSignTool.bat"
-    else:
-        log_warning("CODE_SIGN_TOOL_EXE not set - skipping Windows signing")
-        return True
-
-    if not codesigntool_path.exists():
-        log_error(f"CodeSignTool not found at: {codesigntool_path}")
-        return False
-
-    if not all([env.esigner_username, env.esigner_password, env.esigner_totp_secret]):
-        log_error("Missing eSigner credentials")
-        return False
-
-    log_info(f"Signing {binary_path.name}...")
-
-    try:
-        temp_output_dir = binary_path.parent / "signed_temp"
-        temp_output_dir.mkdir(exist_ok=True)
-
-        cmd = [
-            str(codesigntool_path),
-            "sign",
-            "-username", env.esigner_username,
-            "-password", f'"{env.esigner_password}"',
-        ]
-
-        if env.esigner_credential_id:
-            cmd.extend(["-credential_id", env.esigner_credential_id])
-
-        cmd.extend([
-            "-totp_secret", env.esigner_totp_secret,
-            "-input_file_path", str(binary_path),
-            "-output_dir_path", str(temp_output_dir),
-            "-override",
-        ])
-
-        result = subprocess.run(
-            " ".join(cmd),
-            shell=True,
-            capture_output=True,
-            text=True,
-            cwd=str(codesigntool_path.parent),
-        )
-
-        if result.stdout and "Error:" in result.stdout:
-            log_error(f"Signing failed: {result.stdout}")
-            return False
-
-        signed_file = temp_output_dir / binary_path.name
-        if signed_file.exists():
-            import shutil
-            shutil.move(str(signed_file), str(binary_path))
-
-        try:
-            temp_output_dir.rmdir()
-        except Exception:
-            pass
-
-        # Verify signature on Windows only (PowerShell not available on macOS/Linux)
-        if IS_WINDOWS():
-            verify_cmd = [
-                "powershell", "-Command",
-                f"(Get-AuthenticodeSignature '{binary_path}').Status",
-            ]
-            verify_result = subprocess.run(verify_cmd, capture_output=True, text=True)
-            if "Valid" in verify_result.stdout:
-                log_success(f"Signed and verified {binary_path.name}")
-            else:
-                log_error(f"Signature verification failed: {verify_result.stdout.strip()}")
-                return False
-        else:
-            log_success(f"Signed {binary_path.name} (verification skipped on non-Windows)")
-
-        return True
-
-    except Exception as e:
-        log_error(f"Signing failed: {e}")
-        return False
+    from ..sign.windows import sign_binaries
+    return sign_binaries([binary_path], env)
 
 
 def get_entitlements_path(root_dir: Path) -> Optional[Path]:

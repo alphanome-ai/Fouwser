@@ -101,7 +101,17 @@ class EnvConfig:
         """macOS login keychain password (used to unlock keychain on build servers)"""
         return os.environ.get("MACOS_KEYCHAIN_PASSWORD")
 
-    # === Windows Code Signing ===
+    # === Windows Code Signing (Provider Selection) ===
+
+    @property
+    def windows_sign_provider(self) -> str:
+        """Windows signing provider: 'ssl' (SSL.com eSigner) or 'azure' (Azure Trusted Signing).
+
+        Defaults to 'ssl' for backward compatibility.
+        """
+        return os.environ.get("WINDOWS_SIGN_PROVIDER", "ssl").lower()
+
+    # === Windows Code Signing (SSL.com eSigner) ===
 
     @property
     def code_sign_tool_path(self) -> Optional[str]:
@@ -132,6 +142,43 @@ class EnvConfig:
     def esigner_credential_id(self) -> Optional[str]:
         """eSigner credential ID for Windows code signing"""
         return os.environ.get("ESIGNER_CREDENTIAL_ID")
+
+    # === Windows Code Signing (Azure Trusted Signing) ===
+
+    @property
+    def azure_tenant_id(self) -> Optional[str]:
+        """Azure AD tenant ID for service principal auth"""
+        return os.environ.get("AZURE_TENANT_ID")
+
+    @property
+    def azure_client_id(self) -> Optional[str]:
+        """Azure AD client/application ID for service principal auth"""
+        return os.environ.get("AZURE_CLIENT_ID")
+
+    @property
+    def azure_client_secret(self) -> Optional[str]:
+        """Azure AD client secret for service principal auth"""
+        return os.environ.get("AZURE_CLIENT_SECRET")
+
+    @property
+    def azure_sign_endpoint(self) -> Optional[str]:
+        """Azure Trusted Signing endpoint URL (e.g., https://eus.codesigning.azure.net)"""
+        return os.environ.get("AZURE_SIGN_ENDPOINT")
+
+    @property
+    def azure_sign_account(self) -> Optional[str]:
+        """Azure Code Signing Account name"""
+        return os.environ.get("AZURE_SIGN_ACCOUNT")
+
+    @property
+    def azure_sign_cert_profile(self) -> Optional[str]:
+        """Azure Certificate Profile name"""
+        return os.environ.get("AZURE_SIGN_CERT_PROFILE")
+
+    @property
+    def azure_sign_dlib_path(self) -> Optional[str]:
+        """Path to Azure.CodeSigning.Dlib.dll (if not on PATH)"""
+        return os.environ.get("AZURE_SIGN_DLIB_PATH")
 
     # === Upload & Distribution (Cloudflare R2) ===
 
@@ -208,14 +255,33 @@ class EnvConfig:
         Get all Windows signing configuration as a dict
 
         Returns:
-            dict with keys: code_sign_tool_path, username, password, totp_secret, credential_id
+            dict with keys: provider, code_sign_tool_path, username, password, totp_secret, credential_id
         """
         return {
+            "provider": self.windows_sign_provider,
             "code_sign_tool_path": self.code_sign_tool_path or "",
             "username": self.esigner_username or "",
             "password": self.esigner_password or "",
             "totp_secret": self.esigner_totp_secret or "",
             "credential_id": self.esigner_credential_id or "",
+        }
+
+    def get_azure_signing_config(self) -> dict:
+        """
+        Get all Azure Trusted Signing configuration as a dict
+
+        Returns:
+            dict with keys: endpoint, account, cert_profile, dlib_path,
+            tenant_id, client_id, client_secret
+        """
+        return {
+            "endpoint": self.azure_sign_endpoint or "",
+            "account": self.azure_sign_account or "",
+            "cert_profile": self.azure_sign_cert_profile or "",
+            "dlib_path": self.azure_sign_dlib_path or "",
+            "tenant_id": self.azure_tenant_id or "",
+            "client_id": self.azure_client_id or "",
+            "client_secret": self.azure_client_secret or "",
         }
 
     def validate_required(self, *var_names: str) -> None:

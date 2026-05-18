@@ -40,10 +40,7 @@ modules:
 # Required environment variables
 # Note: CHROMIUM_SRC can be provided via --chromium-src CLI flag, YAML config, or env var
 required_envs:
-  - CODE_SIGN_TOOL_PATH         # Path to CodeSignTool directory
-  - ESIGNER_USERNAME            # SSL.com eSigner username
-  - ESIGNER_PASSWORD            # SSL.com eSigner password
-  - ESIGNER_TOTP_SECRET         # SSL.com eSigner TOTP secret
+  - WINDOWS_SIGN_PROVIDER
 
 # Notification settings
 notifications:

@@ -891,8 +891,8 @@ def run_main() -> None:
         os.environ["SERVER_MODE"] = server_mode
         os.environ["CHROME_PACKER"] = str(chrome_packer)
 
-    # Conditionally load Apple Dev credentials if signing is requested
-    if any(m.startswith("sign_") for m in selected_modules):
+    # Conditionally load macOS signing credentials
+    if "sign_macos" in selected_modules:
         os.environ["MACOS_CERTIFICATE_NAME"] = resolve_config_value(
             key="MACOS_CERTIFICATE_NAME",
             env_values=dotenv_values,
@@ -914,6 +914,61 @@ def run_main() -> None:
             prompt="PROD_MACOS_NOTARIZATION_PWD",
             secret=True,
         )
+
+    # Conditionally load Windows signing credentials
+    if "sign_windows" in selected_modules:
+        os.environ["WINDOWS_SIGN_PROVIDER"] = resolve_config_value(
+            key="WINDOWS_SIGN_PROVIDER",
+            env_values=dotenv_values,
+            prompt="Windows signing provider",
+            default="ssl",
+            choices={"ssl", "azure"},
+        )
+
+        if os.environ["WINDOWS_SIGN_PROVIDER"] == "ssl":
+            os.environ["CODE_SIGN_TOOL_PATH"] = resolve_config_value(
+                key="CODE_SIGN_TOOL_PATH",
+                env_values=dotenv_values,
+                prompt="CODE_SIGN_TOOL_PATH (CodeSignTool directory)",
+            )
+            os.environ["ESIGNER_USERNAME"] = resolve_config_value(
+                key="ESIGNER_USERNAME",
+                env_values=dotenv_values,
+                prompt="ESIGNER_USERNAME",
+            )
+            os.environ["ESIGNER_PASSWORD"] = resolve_config_value(
+                key="ESIGNER_PASSWORD",
+                env_values=dotenv_values,
+                prompt="ESIGNER_PASSWORD",
+                secret=True,
+            )
+            os.environ["ESIGNER_TOTP_SECRET"] = resolve_config_value(
+                key="ESIGNER_TOTP_SECRET",
+                env_values=dotenv_values,
+                prompt="ESIGNER_TOTP_SECRET",
+                secret=True,
+            )
+        else:
+            os.environ["AZURE_SIGN_ENDPOINT"] = resolve_config_value(
+                key="AZURE_SIGN_ENDPOINT",
+                env_values=dotenv_values,
+                prompt="Azure Trusted Signing endpoint (e.g. https://eus.codesigning.azure.net)",
+            )
+            os.environ["AZURE_SIGN_ACCOUNT"] = resolve_config_value(
+                key="AZURE_SIGN_ACCOUNT",
+                env_values=dotenv_values,
+                prompt="Azure Code Signing Account name",
+            )
+            os.environ["AZURE_SIGN_CERT_PROFILE"] = resolve_config_value(
+                key="AZURE_SIGN_CERT_PROFILE",
+                env_values=dotenv_values,
+                prompt="Azure Certificate Profile name",
+            )
+            os.environ["AZURE_SIGN_DLIB_PATH"] = resolve_config_value(
+                key="AZURE_SIGN_DLIB_PATH",
+                env_values=dotenv_values,
+                prompt="Path to Azure.CodeSigning.Dlib.dll",
+            )
 
     require_cmd("uv")
     if not chromium_src.is_dir():
