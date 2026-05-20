@@ -381,7 +381,7 @@ def main(
             log_error("Remove the conflicting flags or don't use --config")
             raise typer.Exit(1)
 
-    log_info("🚀 BrowserOS Build System")
+    log_info("🚀 Fouwser Build System")
     log_info("=" * 70)
 
     # Load YAML config if provided
