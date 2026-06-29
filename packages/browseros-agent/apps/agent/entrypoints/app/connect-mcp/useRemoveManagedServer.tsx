@@ -1,46 +1,39 @@
 import useSWRMutation from 'swr/mutation'
-import { useAgentServerUrl } from '@/lib/browseros/useBrowserOSProviders'
+import { authorizedFetch } from '@/lib/auth/auth-client'
 import { useSessionInfo } from '@/lib/auth/sessionStorage'
+import { readIntegrationError } from './integrationsClient'
+import { resolveIntegrationSlug } from './managedServerCatalog'
 
 interface RemoveServerResponse {
   success: boolean
   serverName: string
 }
 
-interface RemoveServerError {
-  error: string
-}
-
-const removeManagedServer = (
-  authToken: string,
-) => async (
-  url: string,
+const removeManagedServer = async (
+  _key: string,
   { arg }: { arg: { serverName: string } },
 ): Promise<RemoveServerResponse> => {
-  const response = await fetch(url, {
+  const slug = resolveIntegrationSlug(arg.serverName)
+  const response = await authorizedFetch(`/api/v1/integrations/${slug}`, {
     method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${authToken}`,
-    },
-    body: JSON.stringify({ serverName: arg.serverName }),
   })
 
   if (!response.ok) {
-    const errorData = (await response.json()) as RemoveServerError
-    throw new Error(errorData.error || 'Failed to remove server')
+    throw new Error(
+      await readIntegrationError(response, 'Failed to remove server'),
+    )
   }
 
-  return response.json() as Promise<RemoveServerResponse>
+  const data = (await response.json()) as { success: boolean }
+  return { success: data.success, serverName: arg.serverName }
 }
 
 export const useRemoveManagedServer = () => {
-  const { baseUrl: agentServerUrl } = useAgentServerUrl()
   const { sessionInfo } = useSessionInfo()
   const authToken = sessionInfo?.session?.accessToken
 
   return useSWRMutation(
-    agentServerUrl && authToken ? `${agentServerUrl}/composio/servers/remove` : null,
-    removeManagedServer(authToken ?? ''),
+    authToken ? 'integrations/disconnect' : null,
+    removeManagedServer,
   )
 }

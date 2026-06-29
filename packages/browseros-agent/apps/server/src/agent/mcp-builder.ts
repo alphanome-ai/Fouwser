@@ -2,7 +2,7 @@ import { createMCPClient } from '@ai-sdk/mcp'
 import { TIMEOUTS } from '@browseros/shared/constants/timeouts'
 import type { BrowserContext } from '@browseros/shared/schemas/browser-context'
 import type { ToolSet } from 'ai'
-import type { ComposioClient } from '../lib/clients/composio/composio-client'
+import type { IntegrationsClient } from '../lib/clients/integrations/integrations-client'
 import type { KlavisClient } from '../lib/clients/klavis/klavis-client'
 import { logger } from '../lib/logger'
 import {
@@ -21,8 +21,9 @@ export interface McpServerSpecDeps {
   browserContext?: BrowserContext
   klavisClient?: KlavisClient
   browserosId?: string
-  composioClient?: ComposioClient
-  userId?: string
+  integrationsClient?: IntegrationsClient
+  authToken?: string
+  apiBaseUrl?: string
 }
 
 export interface McpClientBundle {
@@ -63,10 +64,14 @@ export async function buildMcpServerSpecs(
   //   }
   // }
 
-  // Composio MCP server
-  if (deps.composioClient && deps.userId) {
+  // Composio MCP server — the session is brokered by the Fouwser backend, which
+  // holds the Composio API key. The app only forwards the user's access token.
+  if (deps.integrationsClient && deps.authToken && deps.apiBaseUrl) {
     try {
-      const session = await deps.composioClient.createSession(deps.userId)
+      const session = await deps.integrationsClient.createMcpSession(
+        deps.authToken,
+        deps.apiBaseUrl,
+      )
       specs.push({
         name: 'composio',
         url: session.mcp.url,
@@ -74,7 +79,7 @@ export async function buildMcpServerSpecs(
         headers: session.mcp.headers,
       })
       logger.info('Added Composio MCP server', {
-        userId: deps.userId.slice(0, 8),
+        sessionId: session.sessionId,
       })
     } catch (error) {
       logger.error('Failed to create Composio MCP server', {

@@ -1,47 +1,55 @@
 import useSWRMutation from 'swr/mutation'
-import { useAgentServerUrl } from '@/lib/browseros/useBrowserOSProviders'
+import { authorizedFetch } from '@/lib/auth/auth-client'
 import { useSessionInfo } from '@/lib/auth/sessionStorage'
+import { readIntegrationError } from './integrationsClient'
+import { resolveIntegrationSlug } from './managedServerCatalog'
 
 interface AddServerResponse {
   success: boolean
   serverName: string
   mcpUrl?: string
+  oauthUrl?: string
+  apiKeyUrl?: string
 }
 
-interface AddServerError {
-  error: string
+interface BackendConnectResponse {
+  success: boolean
+  slug: string
+  mcpUrl?: string
+  oauthUrl?: string
 }
 
-const addManagedServer = (
-  authToken: string,
-) => async (
-  url: string,
+const addManagedServer = async (
+  _key: string,
   { arg }: { arg: { serverName: string } },
 ): Promise<AddServerResponse> => {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${authToken}`,
-    },
-    body: JSON.stringify({ serverName: arg.serverName }),
-  })
+  const slug = resolveIntegrationSlug(arg.serverName)
+  const response = await authorizedFetch(
+    `/api/v1/integrations/${slug}/connect`,
+    { method: 'POST' },
+  )
 
   if (!response.ok) {
-    const errorData = (await response.json()) as AddServerError
-    throw new Error(errorData.error || 'Failed to add server')
+    throw new Error(
+      await readIntegrationError(response, 'Failed to add server'),
+    )
   }
 
-  return response.json() as Promise<AddServerResponse>
+  const data = (await response.json()) as BackendConnectResponse
+  return {
+    success: data.success,
+    serverName: arg.serverName,
+    mcpUrl: data.mcpUrl,
+    oauthUrl: data.oauthUrl,
+  }
 }
 
 export const useAddManagedServer = () => {
-  const { baseUrl: agentServerUrl } = useAgentServerUrl()
   const { sessionInfo } = useSessionInfo()
   const authToken = sessionInfo?.session?.accessToken
 
   return useSWRMutation(
-    agentServerUrl && authToken ? `${agentServerUrl}/composio/servers/add` : null,
-    addManagedServer(authToken ?? ''),
+    authToken ? 'integrations/connect' : null,
+    addManagedServer,
   )
 }
