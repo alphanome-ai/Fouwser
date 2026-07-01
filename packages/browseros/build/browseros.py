@@ -17,7 +17,7 @@ from .cli import build
 
 # Create main app
 app = typer.Typer(
-    help="BrowserOS Build System",
+    help="Fouwser Build System",
     pretty_exceptions_enable=False,
     pretty_exceptions_show_locals=False
 )
@@ -30,7 +30,7 @@ build_app = typer.Typer(
 build_app.callback(invoke_without_command=True)(build.main)
 
 # Add build as a subcommand
-app.add_typer(build_app, name="build", help="Build BrowserOS browser")
+app.add_typer(build_app, name="build", help="Build Fouwser browser")
 
 # Add dev command
 from .cli import dev

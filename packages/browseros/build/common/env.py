@@ -133,7 +133,14 @@ class EnvConfig:
         """eSigner credential ID for Windows code signing"""
         return os.environ.get("ESIGNER_CREDENTIAL_ID")
 
-    # === Upload & Distribution (Cloudflare R2) ===
+    # === Upload & Distribution ===
+
+    @property
+    def storage_backend(self) -> str:
+        """Active object-storage backend: "r2" (default) or "azure"."""
+        return os.environ.get("STORAGE_BACKEND", "r2").strip().lower()
+
+    # --- Cloudflare R2 / S3 ---
 
     @property
     def r2_account_id(self) -> Optional[str]:
@@ -157,7 +164,12 @@ class EnvConfig:
 
     @property
     def r2_cdn_base_url(self) -> str:
-        """CDN base URL for R2 artifacts (default: http://cdn.fouwser.com)"""
+        """Public CDN base URL baked into artifact/appcast URLs.
+
+        Backend-agnostic despite the name: for Azure this is your Azure
+        CDN / Front Door custom domain (e.g. https://cdn.fouwser.com).
+        Default: http://cdn.fouwser.com
+        """
         return os.environ.get("R2_CDN_BASE_URL", "http://cdn.fouwser.com")
 
     @property
@@ -167,6 +179,18 @@ class EnvConfig:
         if account_id:
             return f"https://{account_id}.r2.cloudflarestorage.com"
         return None
+
+    # --- Azure Blob Storage ---
+
+    @property
+    def azure_connection_string(self) -> Optional[str]:
+        """Azure Storage connection string (auth for the Azure backend)."""
+        return os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+
+    @property
+    def azure_container(self) -> str:
+        """Azure blob container name (defaults to R2_BUCKET / "browseros")."""
+        return os.environ.get("AZURE_STORAGE_CONTAINER", self.r2_bucket)
 
     # === Sparkle Signing (macOS) ===
 
@@ -260,11 +284,26 @@ class EnvConfig:
             "endpoint_url": self.r2_endpoint_url or "",
         }
 
-    def has_r2_config(self) -> bool:
-        """Check if R2 upload configuration is available"""
+    def has_azure_config(self) -> bool:
+        """Check if Azure Blob Storage configuration is available"""
+        return bool(self.azure_connection_string)
+
+    def has_storage_config(self) -> bool:
+        """Check if the active storage backend is configured"""
+        if self.storage_backend == "azure":
+            return self.has_azure_config()
         return bool(
             self.r2_account_id and self.r2_access_key_id and self.r2_secret_access_key
         )
+
+    def has_r2_config(self) -> bool:
+        """Check if the active storage backend is configured.
+
+        Backend-aware despite the legacy name: returns True when the configured
+        backend (STORAGE_BACKEND) has valid credentials. Kept for backward
+        compatibility with existing call sites.
+        """
+        return self.has_storage_config()
 
     def has_sparkle_key(self) -> bool:
         """Check if Sparkle private key is available"""

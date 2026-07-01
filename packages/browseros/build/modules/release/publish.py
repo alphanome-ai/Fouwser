@@ -21,17 +21,8 @@ def copy_to_download_path(
     source_key: str,
     dest_key: str,
 ) -> bool:
-    """Copy object within R2 bucket"""
-    try:
-        client.copy_object(
-            Bucket=bucket,
-            CopySource={"Bucket": bucket, "Key": source_key},
-            Key=dest_key,
-        )
-        return True
-    except Exception as e:
-        log_error(f"Failed to copy {source_key} → {dest_key}: {e}")
-        return False
+    """Copy object within the storage container (server-side)"""
+    return client.copy(source_key, dest_key)
 
 
 class PublishModule(CommandModule):

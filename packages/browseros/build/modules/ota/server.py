@@ -42,7 +42,7 @@ class ServerOTAModule(CommandModule):
     1. Sign individual binaries (codesign for macOS, CodeSignTool for Windows)
     2. Create zip packages with proper structure
     3. Sign zips with Sparkle Ed25519
-    4. Upload to R2
+    4. Upload to cdn
     5. Generate and upload appcast XML
     """
 
@@ -183,7 +183,7 @@ class ServerOTAModule(CommandModule):
         appcast_path.write_text(appcast_content)
         log_success(f"Appcast saved to: {appcast_path}")
 
-        log_info("\n📤 Uploading artifacts to R2...")
+        log_info("\n📤 Uploading artifacts to cdn...")
         r2_client = get_r2_client(ctx.env)
         if not r2_client:
             raise RuntimeError("Failed to create R2 client")

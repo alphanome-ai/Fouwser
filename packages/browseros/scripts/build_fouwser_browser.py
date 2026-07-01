@@ -47,11 +47,11 @@ AVAILABLE_MODULES = {
     # "sign_linux": "Linux code signing (no-op)",
     "sign_macos": "Sign and notarize macOS application",
     "sign_windows": "Sign Windows binaries and create signed installer",
-    "sparkle_sign": "Sign DMG files with Sparkle Ed25519 key for auto-update",
     "package_linux": "Create AppImage and .deb packages for Linux",
     "package_macos": "Create DMG package for macOS",
     "package_windows": "Create Windows installer and portable ZIP",
-    # "upload": "Upload build artifacts to Cloudflare R2",
+    "sparkle_sign": "Sign DMG files with Sparkle Ed25519 key for auto-update",
+    "upload": "Upload build artifacts to Fouwser cdn",
 }
 
 # Modules that must run BEFORE injecting local extensions into Chromium source
@@ -76,11 +76,11 @@ BUILD_MODULE_LIST = {
     "sign_linux",
     "sign_macos",
     "sign_windows",
-    "sparkle_sign",
     "package_linux",
     "package_macos",
     "package_windows",
-    # "upload",
+    "sparkle_sign",
+    "upload",
 }
 
 DEFAULT_ON_MODULES = {
