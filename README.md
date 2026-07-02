@@ -36,3 +36,6 @@ Fouwser is open source under the [AGPL-3.0 license](LICENSE).
 - [The Chromium Project](https://www.chromium.org/) - At the core of Fouwser, making it possible to exist in the first place.
 
 Copyright &copy; 2026 Alphanome.ai.
+
+
+test
