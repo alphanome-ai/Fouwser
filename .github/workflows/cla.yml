@@ -26,17 +26,19 @@ jobs:
           path-to-signatures: 'signatures/version1/cla.json'
 
           # Path to your CLA document
-          path-to-document: 'https://github.com/browseros-ai/BrowserOS/blob/main/CLA.md'
+          path-to-document: 'https://github.com/alphanome-ai/Fouwser/blob/master/CLA.md'
 
-          # Branch to store signatures (should not be protected)
-          branch: 'main'
+          # Branch to store signatures (must NOT be protected; the bot commits
+          # the signatures file directly here. master is covered by a ruleset
+          # that blocks direct pushes, so use a dedicated unprotected branch.)
+          branch: 'cla-signatures'
 
           # Allowlist for users who don't need to sign (bots, core team members)
-          allowlist: shadowfax92,felarof99,dependabot[bot],renovate[bot],github-actions[bot]
+          # allowlist: dependabot[bot],renovate[bot],github-actions[bot]
 
           # Optional: Custom messages
           custom-notsigned-prcomment: |
-            **CLA Assistant Lite bot** Thank you for your submission! We require contributors to sign our [Contributor License Agreement](https://github.com/browseros-ai/BrowserOS/blob/main/CLA.md) before we can accept your contribution.
+            **CLA Assistant Lite bot** Thank you for your submission! We require contributors to sign our [Contributor License Agreement](https://github.com/alphanome-ai/Fouwser/blob/master/CLA.md) before we can accept your contribution.
 
             By signing the CLA, you confirm that:
             - You have read and agree to the AGPL-3.0 license terms
@@ -49,7 +51,7 @@ jobs:
           custom-pr-sign-comment: 'I have read the CLA Document and I hereby sign the CLA'
 
           custom-allsigned-prcomment: |
-            **CLA Assistant Lite bot** ✅ All contributors have signed the CLA. Thank you for helping make BrowserOS better!
+            **CLA Assistant Lite bot** ✅ All contributors have signed the CLA. Thank you for helping make Fouwser better!
 
           # Lock PR after merge to prevent signature tampering
           lock-pullrequest-aftermerge: true
