@@ -28,8 +28,10 @@ jobs:
           # Path to your CLA document
           path-to-document: 'https://github.com/alphanome-ai/Fouwser/blob/master/CLA.md'
 
-          # Branch to store signatures (should not be protected)
-          branch: 'master'
+          # Branch to store signatures (must NOT be protected; the bot commits
+          # the signatures file directly here. master is covered by a ruleset
+          # that blocks direct pushes, so use a dedicated unprotected branch.)
+          branch: 'cla-signatures'
 
           # Allowlist for users who don't need to sign (bots, core team members)
           # allowlist: dependabot[bot],renovate[bot],github-actions[bot]
