@@ -22,6 +22,7 @@ export interface ModelsData {
   ollama: ModelInfo[]
   lmstudio: ModelInfo[]
   bedrock: ModelInfo[]
+  fouwser: ModelInfo[]
   browseros: ModelInfo[]
   moonshot: ModelInfo[]
 }
@@ -91,7 +92,11 @@ export const MODELS_DATA: ModelsData = {
     { modelId: 'qwen/qwen3-vl-8b', contextLength: 131072 },
   ],
   bedrock: [],
-  browseros: [{ modelId: 'browseros-auto', contextLength: 200000 }],
+  fouwser: [{ modelId: 'default', contextLength: 200000 }],
+  browseros: [
+    { modelId: 'default', contextLength: 200000 },
+    { modelId: 'browseros-auto', contextLength: 200000 },
+  ],
 }
 
 /**

@@ -3,8 +3,11 @@ import { DefaultChatTransport, type UIMessage } from 'ai'
 import { compact } from 'es-toolkit/array'
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { toast } from 'sonner'
 import useDeepCompareEffect from 'use-deep-compare-effect'
 import type { Provider } from '@/components/chat/chatComponentTypes'
+import { getSession } from '@/lib/auth/auth-client'
+import { sessionStorage, useSessionInfo } from '@/lib/auth/sessionStorage'
 import { Capabilities, Feature } from '@/lib/browseros/capabilities'
 import { useAgentServerUrl } from '@/lib/browseros/useBrowserOSProviders'
 import type { ChatAction } from '@/lib/chat-actions/types'
@@ -22,6 +25,7 @@ import {
 } from '@/lib/conversations/conversationStorage'
 import { formatConversationHistory } from '@/lib/conversations/formatConversationHistory'
 import { declinedAppsStorage } from '@/lib/declined-apps/storage'
+import { env } from '@/lib/env'
 import { useGraphqlQuery } from '@/lib/graphql/useGraphqlQuery'
 import { useLlmProviders } from '@/lib/llm-providers/useLlmProviders'
 import { track } from '@/lib/metrics/track'
@@ -84,6 +88,7 @@ export const useChatSession = (options?: ChatSessionOptions) => {
   } = useChatRefs()
 
   const { providers: llmProviders, setDefaultProvider } = useLlmProviders()
+  const { sessionInfo, isLoading: isLoadingSessionInfo } = useSessionInfo()
 
   const {
     baseUrl: agentServerUrl,
@@ -185,11 +190,19 @@ export const useChatSession = (options?: ChatSessionOptions) => {
         id: selectedLlmProvider.id,
         name: selectedLlmProvider.name,
         type:
-          selectedLlmProvider.id === 'browseros'
-            ? ('browseros' as const)
+          selectedLlmProvider.id === 'fouwser'
+            ? ('fouwser' as const)
             : selectedLlmProvider.type,
       }
     : providers[0]
+
+  const requiresChatSignIn = !isLoadingSessionInfo && !sessionInfo.user?.id
+
+  const openFouwserSignIn = async () => {
+    await chrome.tabs.create({
+      url: chrome.runtime.getURL('app.html#/login'),
+    })
+  }
 
   const {
     messages,
@@ -209,6 +222,16 @@ export const useChatSession = (options?: ChatSessionOptions) => {
         const activeTab = activeTabsList?.[0] ?? undefined
         const message = getLastMessageText(messages)
         const provider = selectedLlmProviderRef.current
+        let sessionInfo
+        try {
+          sessionInfo =
+            provider?.type === 'fouwser'
+              ? await getSession({ forceRefresh: true })
+              : await sessionStorage.getValue()
+        } catch {
+          toast.error('Authentication failed. Please sign in again.')
+          throw new Error('Authentication failed')
+        }
         const currentMode = modeRef.current
         const enabledMcpServers = enabledMcpServersRef.current
         const customMcpServers = enabledCustomServersRef.current
@@ -292,6 +315,14 @@ export const useChatSession = (options?: ChatSessionOptions) => {
             providerName: provider?.name,
             apiKey: provider?.apiKey,
             baseUrl: provider?.baseUrl,
+            authToken:
+              provider?.type === 'fouwser'
+                ? sessionInfo?.session?.accessToken
+                : undefined,
+            publicApiBaseUrl:
+              provider?.type === 'fouwser'
+                ? env.VITE_PUBLIC_BROWSEROS_API
+                : undefined,
             conversationId: conversationIdRef.current,
             model: provider?.modelId ?? 'default',
             mode: currentMode,
@@ -421,6 +452,11 @@ export const useChatSession = (options?: ChatSessionOptions) => {
   }, [status])
 
   const sendMessage = (params: { text: string; action?: ChatAction }) => {
+    if (requiresChatSignIn) {
+      void openFouwserSignIn()
+      return false
+    }
+
     track(MESSAGE_SENT_EVENT, {
       mode,
       provider_type: selectedLlmProvider?.type,
@@ -435,6 +471,7 @@ export const useChatSession = (options?: ChatSessionOptions) => {
       })
     }
     baseSendMessage({ text: params.text })
+    return true
   }
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: only need to run this once
@@ -501,10 +538,12 @@ export const useChatSession = (options?: ChatSessionOptions) => {
     stop,
     providers,
     selectedProvider,
-    isLoading: isLoadingProviders || isLoadingAgentUrl,
+    isLoading: isLoadingProviders || isLoadingAgentUrl || isLoadingSessionInfo,
     isRestoringConversation,
     agentUrlError,
     chatError,
+    requiresChatSignIn,
+    openFouwserSignIn,
     handleSelectProvider,
     getActionForMessage,
     resetConversation,

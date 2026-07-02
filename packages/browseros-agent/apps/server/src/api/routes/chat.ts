@@ -5,6 +5,7 @@ import { Hono } from 'hono'
 import { stream } from 'hono/streaming'
 import { SessionStore } from '../../agent/session-store'
 import type { Browser } from '../../browser/browser'
+import { IntegrationsClient } from '../../lib/clients/integrations/integrations-client'
 import { KlavisClient } from '../../lib/clients/klavis/klavis-client'
 import { logger } from '../../lib/logger'
 import { metrics } from '../../lib/metrics'
@@ -81,9 +82,11 @@ export function createChatRoutes(deps: ChatRouteDeps) {
 
   const sessionStore = new SessionStore()
   const klavisClient = new KlavisClient()
+  const integrationsClient = new IntegrationsClient()
   const service = new ChatService({
     sessionStore,
     klavisClient,
+    integrationsClient,
     browser: deps.browser,
     registry: deps.registry,
     browserosId,

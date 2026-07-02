@@ -7,7 +7,7 @@ index 9190c5ef6c092..cf0106b8ba53e 100644
  		<string>_googlecast._tcp</string>
  	</array>
 +  <key>SUPublicEDKey</key>
-+  <string>LzQmcNuTsdB3/dsivo0eeN+jPfDoriRHAkkEJcfFs2A=</string>
++  <string>GfuP5QZzsXIxY9ESJpFPLskP6/UbY4N4m9g34z63UQ4=</string>
 +  <key>SUEnableAutomaticChecks</key>
 +  <true/>
 +  <key>SUScheduledCheckInterval</key>
@@ -17,6 +17,6 @@ index 9190c5ef6c092..cf0106b8ba53e 100644
 +  <key>SUAutomaticallyUpdate</key>
 +  <true/>
 +	<key>CrProductDirName</key>
-+	<string>BrowserOS</string>
++	<string>Fouwser</string>
  </dict>
  </plist>

@@ -16,7 +16,8 @@ class AppcastModule(CommandModule):
     description = "Generate Sparkle appcast XML snippets"
 
     def validate(self, ctx: Context) -> None:
-        if not BOTO3_AVAILABLE:
+        # boto3 is only needed for the R2/S3 backend; Azure uses azure-storage-blob.
+        if ctx.env.storage_backend != "azure" and not BOTO3_AVAILABLE:
             raise ValidationError(
                 "boto3 library not installed - run: pip install boto3"
             )

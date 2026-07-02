@@ -95,9 +95,13 @@ export function createSdkRoutes(deps: SdkDeps) {
         hasSessionId: !!sessionId,
       })
 
-      const llmConfig = llm ?? { provider: LLM_PROVIDERS.BROWSEROS }
+      const llmConfig = llm ?? { provider: LLM_PROVIDERS.FOUWSER }
 
-      if (llmConfig.provider !== LLM_PROVIDERS.BROWSEROS && !llmConfig.model) {
+      if (
+        llmConfig.provider !== LLM_PROVIDERS.BROWSEROS &&
+        llmConfig.provider !== LLM_PROVIDERS.FOUWSER &&
+        !llmConfig.model
+      ) {
         return c.json(
           {
             error: { message: 'model is required for non-browseros providers' },
@@ -229,7 +233,7 @@ export function createSdkRoutes(deps: SdkDeps) {
         tabId: requestTabId,
       })
 
-      const llmConfig = llm ?? { provider: LLM_PROVIDERS.BROWSEROS }
+      const llmConfig = llm ?? { provider: LLM_PROVIDERS.FOUWSER }
 
       try {
         // Use provided tabId, or get active tab (from window if specified)

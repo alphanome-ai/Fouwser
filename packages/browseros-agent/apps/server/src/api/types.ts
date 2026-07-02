@@ -21,17 +21,19 @@ import type { ToolRegistry } from '../tools/tool-registry'
 
 // Re-export browser context types for consumers
 export {
-  BrowserContextSchema,
-  CustomMcpServerSchema,
-  TabSchema,
   type BrowserContext,
+  BrowserContextSchema,
   type CustomMcpServer,
+  CustomMcpServerSchema,
   type Tab,
+  TabSchema,
 }
 
 export const AgentLLMConfigSchema = LLMConfigSchema.extend({
   model: z.string().min(1, 'Model name is required'),
   upstreamProvider: z.string().optional(),
+  authToken: z.string().optional(),
+  publicApiBaseUrl: z.string().url().optional(),
 })
 
 export type AgentLLMConfig = z.infer<typeof AgentLLMConfigSchema>

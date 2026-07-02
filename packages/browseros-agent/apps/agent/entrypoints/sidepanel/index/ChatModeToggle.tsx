@@ -1,4 +1,4 @@
-import { Braces, MessageSquare, MousePointer2 } from 'lucide-react'
+import { Braces, type MessageSquare, MousePointer2 } from 'lucide-react'
 import type { FC } from 'react'
 import {
   Tooltip,
@@ -26,11 +26,11 @@ export const ChatModeToggle: FC<ChatModeToggleProps> = ({
       icon: typeof MessageSquare
     }
   > = {
-    chat: {
-      label: 'Chat',
-      description: 'Read-only Q&A about page and context',
-      icon: MessageSquare,
-    },
+    // chat: {
+    //   label: 'Chat',
+    //   description: 'Read-only Q&A about page and context',
+    //   icon: MessageSquare,
+    // },
     agent: {
       label: 'Agent',
       description: 'Can browse, click, and automate browser tasks',

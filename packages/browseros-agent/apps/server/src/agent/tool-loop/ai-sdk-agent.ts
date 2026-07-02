@@ -2,6 +2,7 @@ import { AGENT_LIMITS } from '@browseros/shared/constants/limits'
 import type { BrowserContext } from '@browseros/shared/schemas/browser-context'
 import { stepCountIs, ToolLoopAgent, type UIMessage } from 'ai'
 import type { Browser } from '../../browser/browser'
+import type { IntegrationsClient } from '../../lib/clients/integrations/integrations-client'
 import type { KlavisClient } from '../../lib/clients/klavis/klavis-client'
 import { logger } from '../../lib/logger'
 import { ensureVsCodeInstalledForCoding } from '../../lib/prerequisites/vscode'
@@ -27,6 +28,7 @@ export interface AiSdkAgentConfig {
   browserContext?: BrowserContext
   klavisClient?: KlavisClient
   browserosId?: string
+  integrationsClient?: IntegrationsClient
 }
 
 export class AiSdkAgent {
@@ -61,6 +63,9 @@ export class AiSdkAgent {
         browserContext: config.browserContext,
         klavisClient: config.klavisClient,
         browserosId: config.browserosId,
+        integrationsClient: config.integrationsClient,
+        authToken: config.resolvedConfig.authToken,
+        apiBaseUrl: config.resolvedConfig.publicApiBaseUrl,
       })
       const mcp = await createMcpClients(specs)
       clients = mcp.clients
@@ -118,7 +123,6 @@ export class AiSdkAgent {
         'observe-act-verify',
         'handle-obstacles',
         'error-recovery',
-        'external-integrations',
       )
     }
     const soulContent = await readSoul()

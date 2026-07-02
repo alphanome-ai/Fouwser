@@ -19,7 +19,9 @@ class ResourcesModule(CommandModule):
     def validate(self, ctx: Context) -> None:
         copy_config_path = ctx.get_copy_resources_config()
         if not copy_config_path.exists():
-            raise ValidationError(f"Copy configuration file not found: {copy_config_path}")
+            raise ValidationError(
+                f"Copy configuration file not found: {copy_config_path}"
+            )
 
     def execute(self, ctx: Context) -> None:
         log_info("\n📦 Copying resources...")
@@ -140,6 +142,20 @@ def copy_resources_impl(ctx: Context, commit_each: bool = False) -> bool:
 
         except Exception as e:
             log_error(f"    Error: {e}")
+
+    # Explicitly 'touch' the main resources directory so Ninja detects the change.
+    # Ninja tracks the mtime of the directory itself for bundle_data directory sources.
+    # Overwriting files in-place doesn't update the directory mtime, causing stale builds.
+    target_resources_dir = (
+        ctx.chromium_src / "chrome/browser/browseros/server/resources"
+    )
+    if target_resources_dir.exists():
+        import time
+        import os
+
+        current_time = time.time()
+        os.utime(target_resources_dir, (current_time, current_time))
+        log_info(f"    Updated mtime for {target_resources_dir} to bust Ninja cache")
 
     log_success("Resources copied")
     return True

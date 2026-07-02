@@ -43,7 +43,8 @@ class UploadModule(CommandModule):
     description = "Upload build artifacts to Cloudflare R2"
 
     def validate(self, ctx: Context) -> None:
-        if not BOTO3_AVAILABLE:
+        # boto3 is only needed for the R2/S3 backend; Azure uses azure-storage-blob.
+        if ctx.env.storage_backend != "azure" and not BOTO3_AVAILABLE:
             raise ValidationError(
                 "boto3 library not installed - run: pip install boto3"
             )
@@ -55,7 +56,7 @@ class UploadModule(CommandModule):
             )
 
     def execute(self, ctx: Context) -> None:
-        log_info("\nUploading package artifacts to R2...")
+        log_info("\nUploading package artifacts to cdn...")
 
         extra_metadata = {}
         sparkle_signatures = ctx.artifacts.get("sparkle_signatures")
@@ -68,7 +69,7 @@ class UploadModule(CommandModule):
 
         success, release_json = upload_release_artifacts(ctx, extra_metadata)
         if not success:
-            raise RuntimeError("Failed to upload artifacts to R2")
+            raise RuntimeError("Failed to upload artifacts to cdn")
 
 
 def generate_release_json(
@@ -193,12 +194,12 @@ def upload_release_artifacts(
     Returns:
         (success, release_json_data) tuple
     """
-    if not BOTO3_AVAILABLE:
+    env = ctx.env
+
+    if env.storage_backend != "azure" and not BOTO3_AVAILABLE:
         log_warning("boto3 not installed. Skipping R2 upload.")
         log_info("Install with: pip install boto3")
         return True, None
-
-    env = ctx.env
 
     if not env.has_r2_config():
         log_warning("R2 configuration not set. Skipping upload.")
@@ -212,7 +213,7 @@ def upload_release_artifacts(
     platform = _get_platform()
     release_path = ctx.get_release_path(platform)
 
-    log_info(f"\nUploading to R2: {env.r2_bucket}/{release_path}")
+    log_info(f"\nUploading to cdn: {env.r2_bucket}/{release_path}")
     log_info(f"Found {len(artifacts)} artifact(s):")
     for artifact in artifacts:
         log_info(f"  - {artifact.name}")
@@ -247,7 +248,7 @@ def upload_release_artifacts(
     if not upload_file_to_r2(client, release_json_path, r2_key, env.r2_bucket):
         return False, None
 
-    log_success(f"\nSuccessfully uploaded {len(artifacts)} artifact(s) to R2")
+    log_success(f"\nSuccessfully uploaded {len(artifacts)} artifact(s) to cdn")
     log_info(f"\nRelease metadata:")
     log_info(f"  Version: {release_data['version']}")
     if platform == "macos":
@@ -260,7 +261,7 @@ def upload_release_artifacts(
     ]
     notifier.notify(
         "Upload Complete",
-        f"Uploaded {len(artifacts)} artifact(s) to R2",
+        f"Uploaded {len(artifacts)} artifact(s) to cdn",
         {
             "Version": release_data["version"],
             "Platform": platform,

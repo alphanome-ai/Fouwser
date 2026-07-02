@@ -53,3 +53,4 @@ pre-push:
           echo "     git branch -m <new-name>"
           echo "     git push -u origin <new-name>"
         fi
+        fi

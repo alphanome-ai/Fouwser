@@ -12,6 +12,7 @@ import {
 } from 'ai'
 import type { Browser } from '../browser/browser'
 import { getSkillsDir } from '../lib/browseros-dir'
+import type { IntegrationsClient } from '../lib/clients/integrations/integrations-client'
 import type { KlavisClient } from '../lib/clients/klavis/klavis-client'
 import { logger } from '../lib/logger'
 import { ensureVsCodeInstalledForCoding } from '../lib/prerequisites/vscode'
@@ -42,6 +43,7 @@ export interface AiSdkAgentConfig {
   browserContext?: BrowserContext
   klavisClient?: KlavisClient
   browserosId?: string
+  integrationsClient?: IntegrationsClient
 }
 
 type ToolWithExecute = {
@@ -188,11 +190,14 @@ export class AiSdkAgent {
       })
     }
 
-    // Build external MCP server specs (Klavis, custom) and connect clients
+    // Build external MCP server specs (Klavis, Composio, custom) and connect clients
     const specs = await buildMcpServerSpecs({
       browserContext: config.browserContext,
       klavisClient: config.klavisClient,
       browserosId: config.browserosId,
+      integrationsClient: config.integrationsClient,
+      authToken: config.resolvedConfig.authToken,
+      apiBaseUrl: config.resolvedConfig.publicApiBaseUrl,
     })
     const { clients, tools: externalMcpTools } = await createMcpClients(specs)
 

@@ -19,8 +19,8 @@ export function parseBuildArgs(argv: string[]): BuildArgs {
       'Resource manifest path',
       DEFAULT_MANIFEST_PATH,
     )
-    .option('--upload', 'Upload artifact zips to R2')
-    .option('--no-upload', 'Skip zip upload to R2')
+    .option('--upload', 'Upload artifact zips to cdn')
+    .option('--no-upload', 'Skip zip upload to cdn')
   program.parse(argv, { from: 'user' })
   const options = program.opts<{
     target: string

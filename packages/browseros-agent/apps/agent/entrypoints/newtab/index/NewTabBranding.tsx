@@ -1,5 +1,6 @@
 import { motion } from 'motion/react'
 import type { FC } from 'react'
+// import { env } from '@/lib/env'
 
 export const NewTabBranding: FC = () => {
   return (

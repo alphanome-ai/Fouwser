@@ -51,6 +51,8 @@ export const Chat = () => {
     disliked,
     onClickDislike,
     isRestoringConversation,
+    requiresChatSignIn,
+    openFouwserSignIn,
   } = useChatSessionContext()
 
   const {
@@ -133,6 +135,10 @@ export const Chat = () => {
   const executeMessage = (customMessageText?: string) => {
     const messageText = customMessageText ? customMessageText : input.trim()
     if (!messageText) return
+    if (requiresChatSignIn) {
+      void openFouwserSignIn()
+      return
+    }
     if (mode === 'coding' && !selectedFolder) {
       toast.error('Select a working directory to send coding requests.')
       return
@@ -146,9 +152,11 @@ export const Chat = () => {
         message: messageText,
         tabs: attachedTabs,
       })
-      sendMessage({ text: messageText, action })
+      const wasSent = sendMessage({ text: messageText, action })
+      if (!wasSent) return
     } else {
-      sendMessage({ text: messageText })
+      const wasSent = sendMessage({ text: messageText })
+      if (!wasSent) return
     }
     setInput('')
     setAttachedTabs([])
@@ -204,6 +212,13 @@ export const Chat = () => {
         {isRestoringConversation ? (
           <div className="flex flex-1 items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : status === 'submitted' && messages.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Connecting to agent...
+            </p>
           </div>
         ) : messages.length === 0 ? (
           <ChatEmptyState
@@ -275,6 +290,10 @@ export const Chat = () => {
         attachedTabs={attachedTabs}
         onToggleTab={toggleTabSelection}
         onRemoveTab={removeTab}
+        requiresChatSignIn={requiresChatSignIn}
+        onSignInToFouwser={() => {
+          void openFouwserSignIn()
+        }}
       />
     </>
   )

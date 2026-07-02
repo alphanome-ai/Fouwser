@@ -24,9 +24,10 @@ const RemoteChatHistory: FC<{ userId: string }> = ({ userId }) => {
   const { conversationId: activeConversationId } = useChatSessionContext()
   const queryClient = useQueryClient()
 
-  const { data: profileData } = useGraphqlQuery(GetProfileIdByUserIdDocument, {
-    userId,
-  })
+  const { data: profileData, isLoading: isLoadingProfile } = useGraphqlQuery(
+    GetProfileIdByUserIdDocument,
+    { userId },
+  )
   const profileId = profileData?.profileByUserId?.rowId
 
   const {
@@ -96,7 +97,7 @@ const RemoteChatHistory: FC<{ userId: string }> = ({ userId }) => {
     [conversations],
   )
 
-  if (!profileId || isLoadingConversations) {
+  if (isLoadingProfile || (profileId && isLoadingConversations)) {
     return (
       <div className="flex flex-1 items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

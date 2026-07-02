@@ -31,7 +31,10 @@ export function createBrowserosRateLimitMiddleware(
 
     const request = c.req.valid('json')
 
-    if (request.provider === LLM_PROVIDERS.BROWSEROS) {
+    if (
+      request.provider === LLM_PROVIDERS.BROWSEROS ||
+      request.provider === LLM_PROVIDERS.FOUWSER
+    ) {
       rateLimiter.check(browserosId)
       rateLimiter.record({
         conversationId: request.conversationId,

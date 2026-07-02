@@ -8,9 +8,9 @@ index caa0e420956a3..d60a67a8bacb7 100644
  #else
 -const char kDefaultServiceName[] = "Chromium Safe Storage";
 -const char kDefaultAccountName[] = "Chromium";
-+// BrowserOS: custom keychain service name
-+const char kDefaultServiceName[] = "BrowserOS Safe Storage";
-+const char kDefaultAccountName[] = "BrowserOS";
++// Fouwser: custom keychain service name
++const char kDefaultServiceName[] = "Fouwser Safe Storage";
++const char kDefaultAccountName[] = "Fouwser";
  #endif
  
  // These values are persisted to logs. Entries should not be renumbered and

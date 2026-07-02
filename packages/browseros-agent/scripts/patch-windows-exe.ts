@@ -30,16 +30,27 @@ const rceditPath = path.resolve(
 )
 
 if (!fs.existsSync(rceditPath)) {
-  console.error(`Error: rcedit binary not found at: ${rceditPath}`)
-  process.exit(1)
+  console.warn(`Warning: rcedit binary not found at: ${rceditPath}`)
+  console.warn('Skipping Windows executable metadata patch')
+  process.exit(0)
+}
+
+const rceditStat = fs.statSync(rceditPath)
+if (rceditStat.size < 1024) {
+  const content = fs.readFileSync(rceditPath, 'utf8')
+  if (content.startsWith('version https://git-lfs.github.com/spec/v1')) {
+    console.warn(`Warning: rcedit binary is a Git LFS pointer: ${rceditPath}`)
+    console.warn('Skipping Windows executable metadata patch')
+    process.exit(0)
+  }
 }
 
 const metadata = {
-  ProductName: 'BrowserOS Agent',
-  FileDescription: 'BrowserOS Agent',
-  CompanyName: 'BrowserOS',
-  LegalCopyright: 'Copyright (C) 2025 BrowserOS',
-  InternalName: 'browseros-server',
+  ProductName: 'Fouwser Agent',
+  FileDescription: 'Fouwser Agent',
+  CompanyName: 'Fouwser',
+  LegalCopyright: 'Copyright (C) 2026 Fouwser',
+  InternalName: 'fouwser-server',
   OriginalFilename: path.basename(exePath),
 }
 

@@ -63,31 +63,11 @@ def list_all_versions(env: Optional[EnvConfig] = None) -> List[str]:
         return []
 
     versions = []
-    continuation_token = None
-
-    while True:
-        kwargs = {
-            "Bucket": env.r2_bucket,
-            "Prefix": "releases/",
-            "Delimiter": "/",
-        }
-        if continuation_token:
-            kwargs["ContinuationToken"] = continuation_token
-
-        try:
-            response = client.list_objects_v2(**kwargs)
-        except Exception:
-            break
-
-        for prefix in response.get("CommonPrefixes", []):
-            # prefix looks like "releases/0.31.0/"
-            version = prefix["Prefix"].replace("releases/", "").rstrip("/")
-            if version:
-                versions.append(version)
-
-        if not response.get("IsTruncated"):
-            break
-        continuation_token = response.get("NextContinuationToken")
+    for prefix in client.list_prefixes("releases/"):
+        # prefix looks like "releases/0.31.0/"
+        version = prefix.replace("releases/", "").rstrip("/")
+        if version:
+            versions.append(version)
 
     # Sort versions descending (newest first) using version tuple comparison
     def version_key(v: str) -> tuple:
@@ -131,13 +111,13 @@ def generate_appcast_item(
     length = artifact.get("sparkle_length", artifact.get("size", 0))
 
     return f"""<item>
-  <title>BrowserOS - {version}</title>
+  <title>Fouwser - {version}</title>
   <description sparkle:format="plain-text">
   </description>
   <sparkle:version>{sparkle_version}</sparkle:version>
   <sparkle:shortVersionString>{version}</sparkle:shortVersionString>
   <pubDate>{pub_date}</pubDate>
-  <link>https://browseros.com</link>
+  <link>https://fouwser.com</link>
   <enclosure
     url="{artifact['url']}"
     sparkle:edSignature="{signature}"
@@ -155,7 +135,7 @@ def generate_release_notes(version: str, metadata: Dict[str, Dict]) -> str:
             chromium_version = metadata[platform].get("chromium_version", "unknown")
             break
 
-    notes = f"""## BrowserOS v{version}
+    notes = f"""## Fouwser v{version}
 
 Chromium version: {chromium_version}
 

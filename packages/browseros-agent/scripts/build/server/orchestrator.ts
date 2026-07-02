@@ -24,7 +24,7 @@ export async function runProdResourceBuild(argv: string[]): Promise<void> {
   const manifest = loadManifest(manifestPath)
   const distRoot = getDistProdRoot()
 
-  log.header(`Building BrowserOS server artifacts v${buildConfig.version}`)
+  log.header(`Building Fouwser server artifacts v${buildConfig.version}`)
   log.info(`Targets: ${args.targets.map((target) => target.id).join(', ')}`)
   log.info(`Manifest: ${manifestPath}`)
   log.info(`Upload: ${args.upload ? 'enabled' : 'disabled'}`)
