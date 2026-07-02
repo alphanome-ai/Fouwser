@@ -39,6 +39,7 @@ This module internally runs (for EACH architecture):
 Then merges and processes the universal binary.
 """
 
+import os
 from pathlib import Path
 
 from ...common.module import CommandModule, ValidationError
@@ -224,21 +225,36 @@ class UniversalBuildModule(CommandModule):
     def _clean_build_directories(self, ctx: Context) -> None:
         """Clean architecture-specific and universal build directories
 
+        The universal (merged) output directory is ALWAYS cleaned because it
+        holds lipo'd binaries that must never mix slices across runs.
+
+        The per-architecture directories are only cleaned when UNIVERSAL_CLEAN=1
+        (the default), which guarantees pristine release artifacts. Set
+        UNIVERSAL_CLEAN=0 to reuse the arch out-dirs so autoninja can perform an
+        incremental rebuild - dropping dev iterations from hours to minutes.
+
         Args:
             ctx: Base context
         """
         from ...common.utils import safe_rmtree
 
+        clean_arch = os.environ.get("UNIVERSAL_CLEAN", "1") == "1"
+
         log_info("\n🧹 Cleaning build directories...")
 
-        # Clean architecture-specific directories
-        for arch in UNIVERSAL_ARCHITECTURES:
-            arch_dir = ctx.chromium_src / f"out/Default_{arch}"
-            if arch_dir.exists():
-                log_info(f"  Removing {arch_dir}")
-                safe_rmtree(arch_dir)
+        # Clean architecture-specific directories (opt-out via UNIVERSAL_CLEAN=0)
+        if clean_arch:
+            for arch in UNIVERSAL_ARCHITECTURES:
+                arch_dir = ctx.chromium_src / f"out/Default_{arch}"
+                if arch_dir.exists():
+                    log_info(f"  Removing {arch_dir}")
+                    safe_rmtree(arch_dir)
+        else:
+            log_info(
+                "  UNIVERSAL_CLEAN=0 → keeping arch out-dirs for incremental build"
+            )
 
-        # Clean universal directory
+        # Always clean universal (merged) directory
         universal_dir = ctx.chromium_src / "out/Default_universal"
         if universal_dir.exists():
             log_info(f"  Removing {universal_dir}")

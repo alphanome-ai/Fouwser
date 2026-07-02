@@ -43,7 +43,7 @@ AVAILABLE_MODULES = {
     "configure": "Configure build with GN",
     # "series_patches": "Apply series-based patches (GNU Quilt format)",
     "compile": "Build Fouwser using autoninja",
-    # "universal_build": "Build, sign, package, and upload universal binary (arm64 + x64) for macOS",
+    # "universal_build" is a top-level selection (see UNIVERSAL_BUILD prompt), not a per-module toggle
     # "sign_linux": "Linux code signing (no-op)",
     "sign_macos": "Sign and notarize macOS application",
     "sign_windows": "Sign Windows binaries and create signed installer",
@@ -72,7 +72,6 @@ PREP_MODULE_LIST = {
 # Modules that must run AFTER injecting local extensions into Chromium source
 BUILD_MODULE_LIST = {
     "compile",
-    # "universal_build",
     "sign_linux",
     "sign_macos",
     "sign_windows",
@@ -95,6 +94,28 @@ DEFAULT_ON_MODULES = {
     # "sign_macos",
     # "package_macos",
 }
+
+# Menu display grouped and ordered by real execution phase. This is the order
+# the browseros CLI runs modules in, so prompting in the same order keeps the
+# selection intuitive. Modules not present in AVAILABLE_MODULES are skipped.
+MODULE_PHASE_ORDER = [
+    ("Setup", ["clean", "git_setup", "sparkle_setup"]),
+    (
+        "Prep",
+        [
+            "chromium_replace",
+            "string_replaces",
+            "patches",
+            "resources",
+            "bundled_extensions",
+            "configure",
+        ],
+    ),
+    ("Build", ["compile"]),
+    ("Sign", ["sign_macos", "sign_windows", "sign_linux"]),
+    ("Package", ["package_macos", "package_windows", "package_linux"]),
+    ("Publish", ["sparkle_sign", "upload"]),
+]
 
 
 def find_repo_root(start: Path) -> Path:
@@ -860,25 +881,71 @@ def run_main() -> None:
         if not is_executable_file(chrome_packer):
             die(f"Chrome packer binary not found or not executable: {chrome_packer}")
 
-    print(
-        "\nSelect modules to execute (1 = Yes, 0 = No)."
-    )
-    selected_modules = []
-
-    for mod, desc in AVAILABLE_MODULES.items():
-        env_key = f"MODULE_{mod.upper()}"
-        default_val = "1" if mod in DEFAULT_ON_MODULES else "0"
-        choice = resolve_config_value(
-            key=env_key,
+    # Universal build is a top-level selection (macOS only). It internally runs
+    # resources -> configure -> compile -> sign -> package -> upload for both
+    # arm64 and x64, then merges and processes the universal binary, so it
+    # replaces the individual build-phase modules.
+    universal_build = "0"
+    universal_clean = "0"
+    if target_os == "macos":
+        universal_build = resolve_config_value(
+            key="UNIVERSAL_BUILD",
             env_values=dotenv_values,
-            prompt=f"  [{mod}] {desc}",
-            default=default_val,
+            prompt="UNIVERSAL_BUILD (Build+sign+package+upload universal arm64+x64 binary? macOS only)",
+            default="0",
             choices={"0", "1"},
         )
-        if choice == "1":
-            selected_modules.append(mod)
+        if universal_build == "1":
+            universal_clean = resolve_config_value(
+                key="UNIVERSAL_CLEAN",
+                env_values=dotenv_values,
+                prompt="UNIVERSAL_CLEAN (Wipe arch out-dirs for a pristine build? 0 = incremental)",
+                default="0",
+                choices={"0", "1"},
+            )
 
-    if not selected_modules and inject_local_agent == "0":
+    print("\nSelect modules to execute (1 = Yes, 0 = No).")
+    if universal_build == "1":
+        print(
+            "  UNIVERSAL_BUILD is on: compile/sign/package/upload run internally,\n"
+            "  so only Setup/Prep modules are offered below (select what must run\n"
+            "  before the universal build)."
+        )
+
+    selected_modules = []
+
+    for phase_name, phase_modules in MODULE_PHASE_ORDER:
+        # When universal build is selected, only prep-phase modules are relevant;
+        # the build/sign/package/publish phases are performed internally.
+        if universal_build == "1" and all(
+            mod in BUILD_MODULE_LIST for mod in phase_modules
+        ):
+            continue
+
+        header_printed = False
+        for mod in phase_modules:
+            if mod not in AVAILABLE_MODULES:
+                continue
+            if universal_build == "1" and mod in BUILD_MODULE_LIST:
+                continue
+
+            if not header_printed:
+                print(f"\n{phase_name}:")
+                header_printed = True
+
+            env_key = f"MODULE_{mod.upper()}"
+            default_val = "1" if mod in DEFAULT_ON_MODULES else "0"
+            choice = resolve_config_value(
+                key=env_key,
+                env_values=dotenv_values,
+                prompt=f"  [{mod}] {AVAILABLE_MODULES[mod]}",
+                default=default_val,
+                choices={"0", "1"},
+            )
+            if choice == "1":
+                selected_modules.append(mod)
+
+    if not selected_modules and inject_local_agent == "0" and universal_build == "0":
         die("No modules or injections selected. Aborting build.")
 
     # Persist resolved values
@@ -887,12 +954,16 @@ def run_main() -> None:
     os.environ["TARGET_OS"] = target_os
     os.environ["BUILD_TYPE"] = build_type
     os.environ["MODULES"] = ",".join(selected_modules)
+    os.environ["UNIVERSAL_BUILD"] = universal_build
+    if universal_build == "1":
+        os.environ["UNIVERSAL_CLEAN"] = universal_clean
     if inject_local_agent == "1":
         os.environ["SERVER_MODE"] = server_mode
         os.environ["CHROME_PACKER"] = str(chrome_packer)
 
-    # Conditionally load Apple Dev credentials if signing is requested
-    if any(m.startswith("sign_") for m in selected_modules):
+    # Conditionally load Apple Dev credentials if signing is requested. Universal
+    # build signs + notarizes internally, so it needs these credentials too.
+    if universal_build == "1" or any(m.startswith("sign_") for m in selected_modules):
         os.environ["MACOS_CERTIFICATE_NAME"] = resolve_config_value(
             key="MACOS_CERTIFICATE_NAME",
             env_values=dotenv_values,
@@ -961,7 +1032,12 @@ def run_main() -> None:
         inject_agent_into_chromium(chromium_src, agent_info)
 
     # --- Phase D: Run Build Modules (e.g., configure, compile, sign) ---
-    build_mods = [m for m in selected_modules if m in BUILD_MODULE_LIST]
+    if universal_build == "1":
+        # universal_build performs compile/sign/package/upload internally for
+        # both architectures, so it is the sole build-phase module.
+        build_mods = ["universal_build"]
+    else:
+        build_mods = [m for m in selected_modules if m in BUILD_MODULE_LIST]
     if build_mods:
         build_str = ",".join(build_mods)
         log(f"Running Build modules: {build_str}")
